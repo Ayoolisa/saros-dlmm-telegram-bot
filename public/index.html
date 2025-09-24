@@ -16,27 +16,25 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
     :root {
-      --bg-primary: #f4f7fa;
-      --bg-secondary: #ffffff;
-      --text-primary: #333333;
-      --text-secondary: #666666;
-      --accent-color: #00aaff;
-      --container-bg-hero: linear-gradient(135deg, #1e3c72, #2a5298);
-      --container-bg-features: #e6f0fa;
-      --container-bg-cta: #f8e1e1;
-      --footer-bg: #1a252f;
+      --bg-light: #f9fafc;
+      --bg-dark: #1a252f;
+      --text-light: #1e293b;
+      --text-dark: #e2e8f0;
+      --accent: #00aaff;
+      --container-bg-hero: #1e3c72;
+      --container-bg-features: #e0f2fe;
+      --container-bg-cta: #f1f5f9;
       --transition: all 0.3s ease;
     }
     [data-theme="dark"] {
-      --bg-primary: #1a252f;
-      --bg-secondary: #2d3a4b;
-      --text-primary: #ffffff;
-      --text-secondary: #cccccc;
-      --accent-color: #00ccff;
-      --container-bg-hero: linear-gradient(135deg, #1e3c72, #2a5298);
-      --container-bg-features: #2d3a4b;
-      --container-bg-cta: #3a2f2f;
-      --footer-bg: #0d1419;
+      --bg-light: #1a252f;
+      --bg-dark: #0d1419;
+      --text-light: #e2e8f0;
+      --text-dark: #94a3b8;
+      --accent: #00ccff;
+      --container-bg-hero: #2a5298;
+      --container-bg-features: #1e293b;
+      --container-bg-cta: #334155;
     }
     * {
       font-family: "Bricolage Grotesque", sans-serif;
@@ -46,42 +44,70 @@
       transition: var(--transition);
     }
     body {
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      background: var(--bg-light);
+      color: var(--text-light);
       line-height: 1.6;
     }
     .container {
-      padding: 20px;
-      border-radius: 10px;
+      padding: 40px 20px;
+      border-radius: 12px;
       margin: 20px auto;
       max-width: 1200px;
     }
     .btn-get-started, .cta-btn {
-      background: var(--accent-color);
+      background: var(--accent);
       color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
+      padding: 12px 25px;
+      border-radius: 6px;
       text-decoration: none;
+      font-weight: 500;
       transition: var(--transition);
     }
     .btn-get-started:hover, .cta-btn:hover {
-      background: darken(var(--accent-color), 10%);
-      transform: scale(1.05);
+      background: color-mix(in srgb, var(--accent), #000 15%);
+      transform: translateY(-2px);
     }
     #theme-toggle {
       position: fixed;
       top: 20px;
       right: 20px;
       padding: 10px;
-      background: var(--bg-secondary);
+      background: var(--bg-dark);
       border: none;
       border-radius: 50%;
       cursor: pointer;
       font-size: 1.2rem;
       z-index: 1000;
+      color: var(--text-dark);
     }
-    #theme-toggle i {
-      color: var(--text-primary);
+    .section-title h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .section-title p {
+      font-size: 1.1rem;
+      color: var(--text-dark);
+    }
+    .icon-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .icon-box i {
+      font-size: 2rem;
+      color: var(--accent);
+      margin-bottom: 15px;
+    }
+    .icon-box h3 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    .icon-box p {
+      font-size: 1rem;
+      color: var(--text-dark);
     }
   </style>
 
@@ -89,8 +115,6 @@
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="assets/vendor/aos/aos.css" rel="stylesheet">
-  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
   <!-- Main CSS File -->
   <link href="assets/css/main.css" rel="stylesheet">
@@ -105,15 +129,15 @@
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
       <a href="index.html" class="logo d-flex align-items-center">
-        <h1 class="sitename">Saros DLMM Bot</h1>
+        <h1 class="sitename" style="color: var(--accent); font-weight: 700;">Saros DLMM</h1>
       </a>
       <nav id="navmenu" class="navmenu">
         <ul>
-          <li><a href="#hero" class="active">Home</a></li>
-          <li><a href="#features">Features</a></li>
-          <li><a href="#cta">CTA</a></li>
+          <li><a href="#hero" class="active" style="color: var(--text-light);">Home</a></li>
+          <li><a href="#features" style="color: var(--text-dark);">Features</a></li>
+          <li><a href="#cta" style="color: var(--text-dark);">CTA</a></li>
         </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list" style="color: var(--text-light);"></i>
       </nav>
     </div>
   </header>
@@ -124,10 +148,10 @@
     <section id="hero" class="d-flex align-items-center">
       <div class="container" style="background: var(--container-bg-hero); color: white;" data-aos="fade-up" data-aos-delay="100">
         <div class="row justify-content-center">
-          <div class="col-xl-7 col-lg-9 text-center">
-            <h1>Saros DLMM Telegram Bot</h1>
-            <h2>Manage Solana devnet liquidity positions seamlessly. Built for Saros $100K Hackathon.</h2>
-            <a href="https://t.me/saros_tg_bot" class="btn-get-started scrollto">Start Bot on Telegram</a>
+          <div class="col-xl-8 col-lg-10 text-center">
+            <h1 style="font-size: 3rem; font-weight: 800;">Saros DLMM Telegram Bot</h1>
+            <p style="font-size: 1.3rem; margin: 20px 0;">Seamlessly manage liquidity positions on Solana devnet. Crafted for the Saros $100K Hackathon.</p>
+            <a href="https://t.me/saros_tg_bot" class="btn-get-started scrollto">Launch Bot</a>
           </div>
         </div>
       </div>
@@ -136,30 +160,30 @@
     <!-- Features Section -->
     <section id="features" class="features">
       <div class="container" style="background: var(--container-bg-features);" data-aos="fade-up">
-        <div class="section-title">
-          <h2>Features</h2>
-          <p>Powerful DeFi tools at your fingertips.</p>
+        <div class="section-title text-center">
+          <h2>Key Features</h2>
+          <p>Empower your DeFi journey with these tools.</p>
         </div>
-        <div class="row">
-          <div class="col-lg-4">
-            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-              <i class="bi bi-graph-up-arrow" style="color: #2a5298;"></i>
+        <div class="row gy-4 justify-content-center">
+          <div class="col-lg-4 col-md-6">
+            <div class="icon-box" data-aos="fade-up" data-aos-delay="200">
+              <i class="bi bi-graph-up-arrow"></i>
               <h3>View Positions</h3>
-              <p><code>/positions</code> - Check your liquidity positions and fees.</p>
+              <p><code>/positions</code> - Monitor your liquidity and fees.</p>
             </div>
           </div>
-          <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-              <i class="bi bi-currency-dollar" style="color: #2a5298;"></i>
+          <div class="col-lg-4 col-md-6">
+            <div class="icon-box" data-aos="fade-up" data-aos-delay="300">
+              <i class="bi bi-currency-dollar"></i>
               <h3>Add/Remove Liquidity</h3>
-              <p><code>/add_liquidity</code> and <code>/remove_liquidity</code> for easy LP management.</p>
+              <p><code>/add_liquidity</code> and <code>/remove_liquidity</code> for LP control.</p>
             </div>
           </div>
-          <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-              <i class="bi bi-shuffle" style="color: #2a5298;"></i>
+          <div class="col-lg-4 col-md-6">
+            <div class="icon-box" data-aos="fade-up" data-aos-delay="400">
+              <i class="bi bi-shuffle"></i>
               <h3>Rebalance</h3>
-              <p><code>/rebalance</code> - Optimize bins with smart suggestions.</p>
+              <p><code>/rebalance</code> - Optimize your bins smartly.</p>
             </div>
           </div>
         </div>
@@ -168,14 +192,14 @@
 
     <!-- CTA Section -->
     <section id="cta" class="cta">
-      <div class="container" style="background: var(--container-bg-cta);" data-aos="zoom-in">
-        <div class="row">
-          <div class="col-lg-9 text-center text-lg-start">
-            <h3>Try the Bot Now</h3>
-            <p>Interactive Telegram UI with buttons for Saros DLMM on Solana devnet.</p>
+      <div class="container" style="background: var(--container-bg-cta);" data-aos="fade-up">
+        <div class="row align-items-center">
+          <div class="col-lg-8 text-center text-lg-start">
+            <h2 style="font-size: 2rem;">Ready to Try the Bot?</h2>
+            <p style="font-size: 1.1rem;">Experience an interactive Telegram UI tailored for Saros DLMM on Solana devnet.</p>
           </div>
-          <div class="col-lg-3 text-center text-lg-end">
-            <a class="cta-btn" href="https://t.me/YourSarosBot">Launch Bot</a>
+          <div class="col-lg-4 text-center text-lg-end">
+            <a href="https://t.me/YourSarosBot" class="cta-btn">Get Started</a>
           </div>
         </div>
       </div>
@@ -184,70 +208,57 @@
   </main>
 
   <!-- Footer -->
-  <footer id="footer" style="background: var(--footer-bg); color: white;">
-    <div class="footer-top">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-3 col-md-6 footer-contact">
-            <h3>Saros DLMM Bot</h3>
-            <p>
-              Built by Ayomide Olisa<br>
-              Saros Hackathon | Solana Devnet
-            </p>
-          </div>
-          <div class="col-lg-3 col-md-6 footer-links">
-            <h4>Quick Links</h4>
-            <ul>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="#features" style="color: #cccccc;">Features</a></li>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" style="color: #cccccc;">GitHub Repo</a></li>
-            </ul>
-          </div>
-          <div class="col-lg-3 col-md-6 footer-links">
-            <h4>Bot Commands</h4>
-            <ul>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/start</code> - Menu</li>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/positions</code> - View Positions</li>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/add_liquidity</code> - Add LP</li>
-            </ul>
-          </div>
-          <div class="col-lg-3 col-md-6 footer-links">
-            <h4>Connect</h4>
-            <ul>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://t.me/YourSarosBot" style="color: #cccccc;">Telegram Bot</a></li>
-              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://x.com/ay_lisa01" style="color: #cccccc;">X</a></li>
-            </ul>
-          </div>
+  <footer id="footer" style="background: var(--bg-dark); color: var(--text-dark);">
+    <div class="container py-5">
+      <div class="row">
+        <div class="col-lg-3 col-md-6 footer-contact">
+          <h3 style="color: var(--text-light);">Saros DLMM Bot</h3>
+          <p>Built by Ayomide Olisa<br>Saros Hackathon | Solana Devnet</p>
+        </div>
+        <div class="col-lg-3 col-md-6 footer-links">
+          <h4 style="color: var(--text-light);">Quick Links</h4>
+          <ul>
+            <li><i class="bx bx-chevron-right"></i> <a href="#features" style="color: var(--text-dark);">Features</a></li>
+            <li><i class="bx bx-chevron-right"></i> <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" style="color: var(--text-dark);">GitHub</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-6 footer-links">
+          <h4 style="color: var(--text-light);">Bot Commands</h4>
+          <ul>
+            <li><i class="bx bx-chevron-right"></i> <code>/start</code> - Menu</li>
+            <li><i class="bx bx-chevron-right"></i> <code>/positions</code> - View</li>
+            <li><i class="bx bx-chevron-right"></i> <code>/add_liquidity</code> - Add LP</li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-6 footer-links">
+          <h4 style="color: var(--text-light);">Connect</h4>
+          <ul>
+            <li><i class="bx bx-chevron-right"></i> <a href="https://t.me/YourSarosBot" style="color: var(--text-dark);">Telegram</a></li>
+            <li><i class="bx bx-chevron-right"></i> <a href="https://x.com/ay_lisa01" style="color: var(--text-dark);">X</a></li>
+          </ul>
         </div>
       </div>
     </div>
-    <div class="container d-md-flex py-4">
+    <div class="container d-md-flex py-3">
       <div class="me-md-auto text-center text-md-start">
-        <div class="copyright">
-          &copy; Copyright <strong><span>Saros DLMM Bot</span></strong>. All Rights Reserved
-        </div>
+        <p class="copyright">© 2025 Saros DLMM Bot. All Rights Reserved</p>
       </div>
-      <div class="social-links text-center text-md-right pt-3 pt-md-0">
-        <a href="https://x.com/ay_lisa01" class="twitter"><i class="bx bxl-twitter" style="color: #cccccc;"></i></a>
-        <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" class="github"><i class="bx bxl-github" style="color: #cccccc;"></i></a>
+      <div class="social-links text-center text-md-end pt-3 pt-md-0">
+        <a href="https://x.com/ay_lisa01" class="twitter"><i class="bx bxl-twitter" style="color: var(--text-dark);"></i></a>
+        <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" class="github"><i class="bx bxl-github" style="color: var(--text-dark);"></i></a>
       </div>
     </div>
   </footer>
 
   <!-- Scroll Top -->
-  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center" style="background: var(--bg-secondary); color: var(--text-primary);"><i class="bi bi-arrow-up-short"></i></a>
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center" style="background: var(--bg-dark); color: var(--text-dark);"><i class="bi bi-arrow-up-short"></i></a>
 
   <!-- Preloader -->
-  <div id="preloader" style="background: var(--bg-primary);"></div>
+  <div id="preloader" style="background: var(--bg-light);"></div>
 
   <!-- Vendor JS Files -->
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/php-email-form/validate.js"></script>
   <script src="assets/vendor/aos/aos.js"></script>
-  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
-  <script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
-  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
-  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
 
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
@@ -259,6 +270,7 @@
       body.setAttribute('data-theme', theme);
       document.getElementById('theme-toggle').innerHTML = theme === 'dark' ? '<i class="bi bi-moon-stars"></i>' : '<i class="bi bi-sun"></i>';
     }
+    AOS.init({ duration: 1000 });
   </script>
 
 </body>
