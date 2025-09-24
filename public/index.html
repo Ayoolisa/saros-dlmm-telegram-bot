@@ -1,278 +1,465 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Index - Axis Bootstrap Template</title>
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
 
-<head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Saros DLMM Telegram Bot</title>
-  <meta name="description" content="Manage Solana devnet liquidity positions seamlessly. Built for Saros $100K Hackathon.">
-  <meta name="keywords" content="Solana, DeFi, Saros, DLMM, Telegram Bot">
+    <!-- Favicons -->
+    <link href="assets/img/favicon.png" rel="icon" />
+    <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon" />
 
-  <!-- Favicons -->
-  <link href="assets/img/favicon.png" rel="icon">
-  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Custom Font -->
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
-    :root {
-      --bg-light: #f9fafc;
-      --bg-dark: #1a252f;
-      --text-light: #1e293b;
-      --text-dark: #e2e8f0;
-      --accent: #00aaff;
-      --container-bg-hero: #1e3c72;
-      --container-bg-features: #e0f2fe;
-      --container-bg-cta: #f1f5f9;
-      --transition: all 0.3s ease;
-    }
-    [data-theme="dark"] {
-      --bg-light: #1a252f;
-      --bg-dark: #0d1419;
-      --text-light: #e2e8f0;
-      --text-dark: #94a3b8;
-      --accent: #00ccff;
-      --container-bg-hero: #2a5298;
-      --container-bg-features: #1e293b;
-      --container-bg-cta: #334155;
-    }
-    * {
-      font-family: "Bricolage Grotesque", sans-serif;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      transition: var(--transition);
-    }
-    body {
-      background: var(--bg-light);
-      color: var(--text-light);
-      line-height: 1.6;
-    }
-    .container {
-      padding: 40px 20px;
-      border-radius: 12px;
-      margin: 20px auto;
-      max-width: 1200px;
-    }
-    .btn-get-started, .cta-btn {
-      background: var(--accent);
-      color: white;
-      padding: 12px 25px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: 500;
-      transition: var(--transition);
-    }
-    .btn-get-started:hover, .cta-btn:hover {
-      background: color-mix(in srgb, var(--accent), #000 15%);
-      transform: translateY(-2px);
-    }
-    #theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px;
-      background: var(--bg-dark);
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 1.2rem;
-      z-index: 1000;
-      color: var(--text-dark);
-    }
-    .section-title h2 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .section-title p {
-      font-size: 1.1rem;
-      color: var(--text-dark);
-    }
-    .icon-box {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .icon-box i {
-      font-size: 2rem;
-      color: var(--accent);
-      margin-bottom: 15px;
-    }
-    .icon-box h3 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-    .icon-box p {
-      font-size: 1rem;
-      color: var(--text-dark);
-    }
-  </style>
+    <!-- Vendor CSS Files -->
+    <link
+      href="assets/vendor/bootstrap/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="assets/vendor/bootstrap-icons/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link href="assets/vendor/aos/aos.css" rel="stylesheet" />
+    <link
+      href="assets/vendor/glightbox/css/glightbox.min.css"
+      rel="stylesheet"
+    />
+    <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet" />
 
-  <!-- Vendor CSS Files -->
-  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+    <!-- Main CSS File -->
+    <link href="assets/css/main.css" rel="stylesheet" />
 
-  <!-- Main CSS File -->
-  <link href="assets/css/main.css" rel="stylesheet">
-</head>
+    <!-- =======================================================
+  * Template Name: Axis
+  * Template URL: https://bootstrapmade.com/axis-bootstrap-corporate-template/
+  * Updated: Sep 13 2025 with Bootstrap v5.3.8
+  * Author: BootstrapMade.com
+  * License: https://bootstrapmade.com/license/
+  ======================================================== -->
+  </head>
 
-<body class="index-page" data-theme="light">
+  <body class="index-page">
+    <header id="header" class="header d-flex align-items-center fixed-top">
+      <div
+        class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between"
+      >
+        <a href="index.html" class="logo d-flex align-items-center">
+          <!-- Uncomment the line below if you also wish to use an image logo -->
+          <!-- <img src="assets/img/logo.webp" alt=""> -->
+          <h1 class="sitename">Saros</h1>
+        </a>
 
-  <button id="theme-toggle" onclick="toggleTheme()">
-    <i class="bi bi-moon-stars"></i>
-  </button>
-
-  <header id="header" class="header d-flex align-items-center fixed-top">
-    <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
-      <a href="index.html" class="logo d-flex align-items-center">
-        <h1 class="sitename" style="color: var(--accent); font-weight: 700;">Saros DLMM</h1>
-      </a>
-      <nav id="navmenu" class="navmenu">
-        <ul>
-          <li><a href="#hero" class="active" style="color: var(--text-light);">Home</a></li>
-          <li><a href="#features" style="color: var(--text-dark);">Features</a></li>
-          <li><a href="#cta" style="color: var(--text-dark);">CTA</a></li>
-        </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list" style="color: var(--text-light);"></i>
-      </nav>
-    </div>
-  </header>
-
-  <main class="main">
-
-    <!-- Hero Section -->
-    <section id="hero" class="d-flex align-items-center">
-      <div class="container" style="background: var(--container-bg-hero); color: white;" data-aos="fade-up" data-aos-delay="100">
-        <div class="row justify-content-center">
-          <div class="col-xl-8 col-lg-10 text-center">
-            <h1 style="font-size: 3rem; font-weight: 800;">Saros DLMM Telegram Bot</h1>
-            <p style="font-size: 1.3rem; margin: 20px 0;">Seamlessly manage liquidity positions on Solana devnet. Crafted for the Saros $100K Hackathon.</p>
-            <a href="https://t.me/saros_tg_bot" class="btn-get-started scrollto">Launch Bot</a>
-          </div>
-        </div>
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="#hero" class="active">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#Features">Features</a></li>
+            <!-- <li><a href="#contact">Contact</a></li> -->
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
       </div>
-    </section><!-- /Hero Section -->
+    </header>
 
-    <!-- Features Section -->
-    <section id="features" class="features">
-      <div class="container" style="background: var(--container-bg-features);" data-aos="fade-up">
-        <div class="section-title text-center">
-          <h2>Key Features</h2>
-          <p>Empower your DeFi journey with these tools.</p>
-        </div>
-        <div class="row gy-4 justify-content-center">
-          <div class="col-lg-4 col-md-6">
-            <div class="icon-box" data-aos="fade-up" data-aos-delay="200">
-              <i class="bi bi-graph-up-arrow"></i>
-              <h3>View Positions</h3>
-              <p><code>/positions</code> - Monitor your liquidity and fees.</p>
+    <main class="main">
+      <!-- Hero Section -->
+      <section id="hero" class="hero section light-background">
+        <div class="container" data-aos="fade-up" data-aos-delay="100">
+          <div class="row align-items-center">
+            <div class="col-lg-6">
+              <div class="hero-content">
+                <h1 data-aos="fade-up" data-aos-delay="200">
+                  Meet Saros LP Bot – Your DeFi Edge!
+                </h1>
+                <p data-aos="fade-up" data-aos-delay="300">
+                  The Saros LP Bot revolutionizes liquidity management by
+                  automating pool adjustments with real-time precision.
+                  Currently in its testing phase, this Node.js-powered tool uses
+                  Saros DLMM SDKs to monitor market shifts, ensuring optimal
+                  positioning for liquidity providers. It’s designed to save
+                  time and reduce manual errors, making DeFi trading smoother
+                  for users
+                </p>
+                <p>
+                  Beyond basic automation, the bot integrates advanced DeFi
+                  features, leveraging the Saros DLMM SDKs to support
+                  rebalancing and complex order types like limit orders and
+                  stop-loss. This capability allows traders to execute
+                  strategies with confidence, adapting to volatile markets while
+                  the bot handles the heavy lifting during its ongoing
+                  development and testing.
+                </p>
+                <div class="hero-cta" data-aos="fade-up" data-aos-delay="400">
+                  <a
+                    href="https://t.me/saros_tg_bot"
+                    target="_blank"
+                    class="btn-primary"
+                    >Get Started Today</a
+                  >
+                  <a
+                    href="#https://www.youtube.com/watch?v=Y7f98aduVJ8"
+                    class="btn-secondary glightbox"
+                  >
+                    <i class="bi bi-play-circle"></i>
+                    Watch the Demo
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="col-lg-4 col-md-6">
-            <div class="icon-box" data-aos="fade-up" data-aos-delay="300">
-              <i class="bi bi-currency-dollar"></i>
-              <h3>Add/Remove Liquidity</h3>
-              <p><code>/add_liquidity</code> and <code>/remove_liquidity</code> for LP control.</p>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6">
-            <div class="icon-box" data-aos="fade-up" data-aos-delay="400">
-              <i class="bi bi-shuffle"></i>
-              <h3>Rebalance</h3>
-              <p><code>/rebalance</code> - Optimize your bins smartly.</p>
+
+            <div class="col-lg-6">
+              <div class="hero-image" data-aos="fade-left" data-aos-delay="300">
+                <img
+                  src="assets/img/a-futuristic-digital-dashboard-glowing-w_2roCdYILS7CE2dpBtpOQMw_pyY78_UAQ6mp4MVZlYCyVw.jpeg"
+                  alt="Business Success"
+                  class="img-fluid"
+                />
+                <div
+                  class="floating-card"
+                  data-aos="zoom-in"
+                  data-aos-delay="600"
+                >
+                  <div class="card-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                  </div>
+                  <div class="card-content">
+                    <h5>Stay ahead of volatility with real-time pool adjustments</h5>
+                    <div class="growth-percentage">95%+ uptime</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section><!-- /Features Section -->
+      </section>
+      <!-- /Hero Section -->
 
-    <!-- CTA Section -->
-    <section id="cta" class="cta">
-      <div class="container" style="background: var(--container-bg-cta);" data-aos="fade-up">
-        <div class="row align-items-center">
-          <div class="col-lg-8 text-center text-lg-start">
-            <h2 style="font-size: 2rem;">Ready to Try the Bot?</h2>
-            <p style="font-size: 1.1rem;">Experience an interactive Telegram UI tailored for Saros DLMM on Solana devnet.</p>
+      <!-- About Section -->
+      <section id="about" class="about section">
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+          <span class="subtitle">About</span>
+          <h2>About Saros</h2>
+        </div>
+        <!-- End Section Title -->
+
+        <div class="container" data-aos="fade-up" data-aos-delay="100">
+          <div class="row align-items-center">
+            <div class="col-lg-6" data-aos="fade-right" data-aos-delay="200">
+              <div class="content">
+                <h2>Streamlined Liquidity Management</h2>
+                <p class="lead">
+                  The Saros LP Bot revolutionizes liquidity management by
+                  automating pool adjustments with real-time precision.
+                </p>
+
+                <p>
+                  Currently in its testing phase, this Node.js-powered tool uses
+                  Saros DLMM SDKs to monitor market shifts, ensuring optimal
+                  positioning for liquidity providers. It’s designed to save
+                  time and reduce manual errors, making DeFi trading smoother
+                  for users.
+                </p>
+
+                <p>
+                  Beyond basic automation, the bot integrates advanced DeFi
+                  features, leveraging the Saros DLMM SDKs to support
+                  rebalancing and complex order types like limit orders and
+                  stop-loss. This capability allows traders to execute
+                  strategies with confidence, adapting to volatile markets while
+                  the bot handles the heavy lifting during its ongoing
+                  development and testing.
+                </p>
+
+                <!-- <div class="stats-row">
+                <div class="stat-item">
+                  <div class="stat-number purecounter" data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1"></div>
+                  <div class="stat-label">Years Experience</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-number purecounter" data-purecounter-start="0" data-purecounter-end="850" data-purecounter-duration="1"></div>
+                  <div class="stat-label">Projects Completed</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-number purecounter" data-purecounter-start="0" data-purecounter-end="240" data-purecounter-duration="1"></div>
+                  <div class="stat-label">Happy Clients</div>
+                </div>
+              </div>
+
+              <div class="cta-section">
+                <a href="#" team="" class="btn-outline">Meet Our Team</a>
+              </div> -->
+              </div>
+            </div>
+
+            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="300">
+              <div class="image-wrapper">
+                <img
+                  src="assets/img/a-futuristic-defi-dashboard-glowing-with_ATxJ9KP8SiiqYq2qzzf21Q_ERBz-etzTGOT34Kk8AeGMw.jpeg"
+                  alt="About us"
+                  class="img-fluid"
+                />
+              </div>
+            </div>
           </div>
-          <div class="col-lg-4 text-center text-lg-end">
-            <a href="https://t.me/YourSarosBot" class="cta-btn">Get Started</a>
+        </div>
+      </section>
+      <!-- /About Section -->
+
+      <!-- Services Section -->
+      <section id="Features" class="services section">
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+          <span class="subtitle">Key Features</span>
+          <h2>Empower your DeFi journey with these tools.</h2>
+        </div>
+        <!-- End Section Title -->
+
+        <div class="container" data-aos="fade-up" data-aos-delay="100">
+          <div class="row gy-5">
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="200"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <h3>View Positions</h3>
+                <p>
+                  <code>/positions</code> - Monitor your liquidity and fees.
+                </p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
+
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="300"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-currency-dollar"></i>
+                </div>
+                <h3>Add/Remove Liquidity</h3>
+                <p>
+                  <code>/add_liquidity</code> and
+                  <code>/remove_liquidity</code> for LP control.
+                </p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
+
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="400"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-shuffle"></i>
+                </div>
+                <h3>Rebalance</h3>
+                <p><code>/rebalance</code> - Optimize your bins smartly.</p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
+
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="200"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-bar-chart-line"></i>
+                </div>
+                <h3>Real-Time Analytics</h3>
+                <p>
+                  <code>/analytics</code> - Get live insights into market
+                  trends.
+                </p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
+
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="300"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-bell"></i>
+                </div>
+                <h3>Automated Alerts</h3>
+                <p>
+                  <code>/alerts</code> - Receive notifications for key events.
+                </p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
+
+            <div
+              class="col-lg-4 col-md-6"
+              data-aos="fade-up"
+              data-aos-delay="400"
+            >
+              <div class="service-item">
+                <div class="service-icon">
+                  <i class="bi bi-pie-chart"></i>
+                </div>
+                <h3>Portfolio Summary</h3>
+                <p><code>/portfolio</code> - View a snapshot of your assets.</p>
+                <a href="https://t.me/saros_tg_bot" target="_blank" class="service-link">
+                  Learn More <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+            <!-- End Service Item -->
           </div>
         </div>
-      </div>
-    </section><!-- /CTA Section -->
+      </section>
+      <!-- /Services Section -->
 
-  </main>
-
-  <!-- Footer -->
-  <footer id="footer" style="background: var(--bg-dark); color: var(--text-dark);">
-    <div class="container py-5">
-      <div class="row">
-        <div class="col-lg-3 col-md-6 footer-contact">
-          <h3 style="color: var(--text-light);">Saros DLMM Bot</h3>
-          <p>Built by Ayomide Olisa<br>Saros Hackathon | Solana Devnet</p>
+      <!-- CTA Section -->
+      <section id="cta" class="cta">
+        <div class="container" data-aos="fade-up">
+          <div class="row align-items-center">
+            <div class="col-lg-8 text-center text-lg-start">
+              <h2 style="font-size: 2rem;">Ready to Try the Bot?</h2>
+              <p style="font-size: 1.1rem;">
+                Experience an interactive Telegram UI tailored for Saros DLMM on
+                Solana devnet.
+              </p>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+              <a href="https://t.me/saros_tg_bot" target="_blank" class="cta-btn"
+                >Get Started</a
+              >
+            </div>
+          </div>
         </div>
-        <div class="col-lg-3 col-md-6 footer-links">
-          <h4 style="color: var(--text-light);">Quick Links</h4>
-          <ul>
-            <li><i class="bx bx-chevron-right"></i> <a href="#features" style="color: var(--text-dark);">Features</a></li>
-            <li><i class="bx bx-chevron-right"></i> <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" style="color: var(--text-dark);">GitHub</a></li>
-          </ul>
-        </div>
-        <div class="col-lg-3 col-md-6 footer-links">
-          <h4 style="color: var(--text-light);">Bot Commands</h4>
-          <ul>
-            <li><i class="bx bx-chevron-right"></i> <code>/start</code> - Menu</li>
-            <li><i class="bx bx-chevron-right"></i> <code>/positions</code> - View</li>
-            <li><i class="bx bx-chevron-right"></i> <code>/add_liquidity</code> - Add LP</li>
-          </ul>
-        </div>
-        <div class="col-lg-3 col-md-6 footer-links">
-          <h4 style="color: var(--text-light);">Connect</h4>
-          <ul>
-            <li><i class="bx bx-chevron-right"></i> <a href="https://t.me/YourSarosBot" style="color: var(--text-dark);">Telegram</a></li>
-            <li><i class="bx bx-chevron-right"></i> <a href="https://x.com/ay_lisa01" style="color: var(--text-dark);">X</a></li>
-          </ul>
+      </section>
+      <!-- /CTA Section -->
+    </main>
+
+    <footer id="footer" class="footer dark-background">
+      <div class="container footer-top">
+        <div class="row gy-4">
+          <div class="col-lg-5 col-md-12 footer-about">
+            <a href="index.html" class="logo d-flex align-items-center">
+              <span class="sitename">Saros</span>
+            </a>
+            <div class="social-links d-flex mt-4">
+              <a href="https://x.com/__hello_wrld?t=WFI5yRgfzRYRpEaZVuO8KQ&s=09"><i class="bi bi-twitter-x"></i></a>
+              <!-- <a href=""><i class="bi bi-facebook"></i></a> -->
+              <a href="https://www.instagram.com/__ayoolisa/"><i class="bi bi-instagram"></i></a>
+              <a href="https://www.linkedin.com/in/ayomide-olisa-3268ab233"><i class="bi bi-linkedin"></i></a>
+            </div>
+          </div>
+
+          <div class="col-lg-2 col-6 footer-links">
+            <h4>Useful Links</h4>
+            <ul>
+              <li><a href="#">Home</a></li>
+              <li><a href="#">About</a></li>
+              <li><a href="#">Features</a></li>
+              <!-- <li><a href="#">Terms of service</a></li> -->
+              <!-- <li><a href="#">Privacy policy</a></li> -->
+            </ul>
+          </div>
+
+          <!-- <div class="col-lg-2 col-6 footer-links">
+            <h4>Our Services</h4>
+            <ul>
+              <li><a href="#">Web Design</a></li>
+              <li><a href="#">Web Development</a></li>
+              <li><a href="#">Product Management</a></li>
+              <li><a href="#">Marketing</a></li>
+              <li><a href="#">Graphic Design</a></li>
+            </ul>
+          </div> -->
+<!-- 
+          <div
+            class="col-lg-3 col-md-12 footer-contact text-center text-md-start"
+          >
+            <h4>Contact Us</h4>
+            <p>A108 Adam Street</p>
+            <p>New York, NY 535022</p>
+            <p>United States</p>
+            <p class="mt-4">
+              <strong>Phone:</strong> <span>+1 5589 55488 55</span>
+            </p>
+            <p><strong>Email:</strong> <span>info@example.com</span></p>
+          </div> -->
         </div>
       </div>
-    </div>
-    <div class="container d-md-flex py-3">
-      <div class="me-md-auto text-center text-md-start">
-        <p class="copyright">© 2025 Saros DLMM Bot. All Rights Reserved</p>
+
+      <div class="container copyright text-center mt-4">
+        <p>
+          © <span>Copyright</span>
+          <strong class="px-1 sitename">2025 Saros DLMM</strong>
+          <span>All Rights Reserved</span>
+        </p>
+        <div class="credits">
+          <!-- All the links in the footer should remain intact. -->
+          <!-- You can delete the links only if you've purchased the pro version. -->
+          <!-- Licensing information: https://bootstrapmade.com/license/ -->
+          <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
+          Designed by <a href="https://github.com/Ayoolisa">Ayoolisa</a>
+        </div>
       </div>
-      <div class="social-links text-center text-md-end pt-3 pt-md-0">
-        <a href="https://x.com/ay_lisa01" class="twitter"><i class="bx bxl-twitter" style="color: var(--text-dark);"></i></a>
-        <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" class="github"><i class="bx bxl-github" style="color: var(--text-dark);"></i></a>
-      </div>
-    </div>
-  </footer>
+    </footer>
 
-  <!-- Scroll Top -->
-  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center" style="background: var(--bg-dark); color: var(--text-dark);"><i class="bi bi-arrow-up-short"></i></a>
+    <!-- Scroll Top -->
+    <a
+      href="#"
+      id="scroll-top"
+      class="scroll-top d-flex align-items-center justify-content-center"
+      ><i class="bi bi-arrow-up-short"></i
+    ></a>
 
-  <!-- Preloader -->
-  <div id="preloader" style="background: var(--bg-light);"></div>
+    <!-- Preloader -->
+    <div id="preloader"></div>
 
-  <!-- Vendor JS Files -->
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/aos/aos.js"></script>
+    <!-- Vendor JS Files -->
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/php-email-form/validate.js"></script>
+    <script src="assets/vendor/aos/aos.js"></script>
+    <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+    <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+    <script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
+    <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+    <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
 
-  <!-- Main JS File -->
-  <script src="assets/js/main.js"></script>
-
-  <script>
-    function toggleTheme() {
-      const body = document.body;
-      const theme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      body.setAttribute('data-theme', theme);
-      document.getElementById('theme-toggle').innerHTML = theme === 'dark' ? '<i class="bi bi-moon-stars"></i>' : '<i class="bi bi-sun"></i>';
-    }
-    AOS.init({ duration: 1000 });
-  </script>
-
-</body>
-
+    <!-- Main JS File -->
+    <script src="assets/js/main.js"></script>
+  </body>
 </html>
