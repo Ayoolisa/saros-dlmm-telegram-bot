@@ -12,10 +12,78 @@
   <link href="assets/img/favicon.png" rel="icon">
   <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com" rel="preconnect">
-  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <!-- Custom Font -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+    :root {
+      --bg-primary: #f4f7fa;
+      --bg-secondary: #ffffff;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --accent-color: #00aaff;
+      --container-bg-hero: linear-gradient(135deg, #1e3c72, #2a5298);
+      --container-bg-features: #e6f0fa;
+      --container-bg-cta: #f8e1e1;
+      --footer-bg: #1a252f;
+      --transition: all 0.3s ease;
+    }
+    [data-theme="dark"] {
+      --bg-primary: #1a252f;
+      --bg-secondary: #2d3a4b;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --accent-color: #00ccff;
+      --container-bg-hero: linear-gradient(135deg, #1e3c72, #2a5298);
+      --container-bg-features: #2d3a4b;
+      --container-bg-cta: #3a2f2f;
+      --footer-bg: #0d1419;
+    }
+    * {
+      font-family: "Bricolage Grotesque", sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      transition: var(--transition);
+    }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    .container {
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      max-width: 1200px;
+    }
+    .btn-get-started, .cta-btn {
+      background: var(--accent-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn-get-started:hover, .cta-btn:hover {
+      background: darken(var(--accent-color), 10%);
+      transform: scale(1.05);
+    }
+    #theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px;
+      background: var(--bg-secondary);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      z-index: 1000;
+    }
+    #theme-toggle i {
+      color: var(--text-primary);
+    }
+  </style>
 
   <!-- Vendor CSS Files -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -28,15 +96,17 @@
   <link href="assets/css/main.css" rel="stylesheet">
 </head>
 
-<body class="index-page">
+<body class="index-page" data-theme="light">
+
+  <button id="theme-toggle" onclick="toggleTheme()">
+    <i class="bi bi-moon-stars"></i>
+  </button>
 
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
-
       <a href="index.html" class="logo d-flex align-items-center">
         <h1 class="sitename">Saros DLMM Bot</h1>
       </a>
-
       <nav id="navmenu" class="navmenu">
         <ul>
           <li><a href="#hero" class="active">Home</a></li>
@@ -45,7 +115,6 @@
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
-
     </div>
   </header>
 
@@ -53,7 +122,7 @@
 
     <!-- Hero Section -->
     <section id="hero" class="d-flex align-items-center">
-      <div class="container position-relative" data-aos="fade-up" data-aos-delay="100">
+      <div class="container" style="background: var(--container-bg-hero); color: white;" data-aos="fade-up" data-aos-delay="100">
         <div class="row justify-content-center">
           <div class="col-xl-7 col-lg-9 text-center">
             <h1>Saros DLMM Telegram Bot</h1>
@@ -66,29 +135,29 @@
 
     <!-- Features Section -->
     <section id="features" class="features">
-      <div class="container" data-aos="fade-up">
+      <div class="container" style="background: var(--container-bg-features);" data-aos="fade-up">
         <div class="section-title">
           <h2>Features</h2>
           <p>Powerful DeFi tools at your fingertips.</p>
         </div>
         <div class="row">
           <div class="col-lg-4">
-            <div class="icon-box">
-              <i class="bi bi-graph-up-arrow"></i>
+            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+              <i class="bi bi-graph-up-arrow" style="color: #2a5298;"></i>
               <h3>View Positions</h3>
               <p><code>/positions</code> - Check your liquidity positions and fees.</p>
             </div>
           </div>
           <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="icon-box">
-              <i class="bi bi-currency-dollar"></i>
+            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+              <i class="bi bi-currency-dollar" style="color: #2a5298;"></i>
               <h3>Add/Remove Liquidity</h3>
               <p><code>/add_liquidity</code> and <code>/remove_liquidity</code> for easy LP management.</p>
             </div>
           </div>
           <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="icon-box">
-              <i class="bi bi-shuffle"></i>
+            <div class="icon-box" style="background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+              <i class="bi bi-shuffle" style="color: #2a5298;"></i>
               <h3>Rebalance</h3>
               <p><code>/rebalance</code> - Optimize bins with smart suggestions.</p>
             </div>
@@ -99,7 +168,7 @@
 
     <!-- CTA Section -->
     <section id="cta" class="cta">
-      <div class="container" data-aos="zoom-in">
+      <div class="container" style="background: var(--container-bg-cta);" data-aos="zoom-in">
         <div class="row">
           <div class="col-lg-9 text-center text-lg-start">
             <h3>Try the Bot Now</h3>
@@ -115,7 +184,7 @@
   </main>
 
   <!-- Footer -->
-  <footer id="footer">
+  <footer id="footer" style="background: var(--footer-bg); color: white;">
     <div class="footer-top">
       <div class="container">
         <div class="row">
@@ -129,23 +198,23 @@
           <div class="col-lg-3 col-md-6 footer-links">
             <h4>Quick Links</h4>
             <ul>
-              <li><i class="bx bx-chevron-right"></i> <a href="#features">Features</a></li>
-              <li><i class="bx bx-chevron-right"></i> <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot">GitHub Repo</a></li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="#features" style="color: #cccccc;">Features</a></li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" style="color: #cccccc;">GitHub Repo</a></li>
             </ul>
           </div>
           <div class="col-lg-3 col-md-6 footer-links">
             <h4>Bot Commands</h4>
             <ul>
-              <li><i class="bx bx-chevron-right"></i> <code>/start</code> - Menu</li>
-              <li><i class="bx bx-chevron-right"></i> <code>/positions</code> - View Positions</li>
-              <li><i class="bx bx-chevron-right"></i> <code>/add_liquidity</code> - Add LP</li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/start</code> - Menu</li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/positions</code> - View Positions</li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <code>/add_liquidity</code> - Add LP</li>
             </ul>
           </div>
           <div class="col-lg-3 col-md-6 footer-links">
             <h4>Connect</h4>
             <ul>
-              <li><i class="bx bx-chevron-right"></i> <a href="https://t.me/YourSarosBot">Telegram Bot</a></li>
-              <li><i class="bx bx-chevron-right"></i> <a href="https://x.com/ay_lisa01">X</a></li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://t.me/YourSarosBot" style="color: #cccccc;">Telegram Bot</a></li>
+              <li><i class="bx bx-chevron-right" style="color: white;"></i> <a href="https://x.com/ay_lisa01" style="color: #cccccc;">X</a></li>
             </ul>
           </div>
         </div>
@@ -158,17 +227,17 @@
         </div>
       </div>
       <div class="social-links text-center text-md-right pt-3 pt-md-0">
-        <a href="https://x.com/ay_lisa01" class="twitter"><i class="bx bxl-twitter"></i></a>
-        <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" class="github"><i class="bx bxl-github"></i></a>
+        <a href="https://x.com/ay_lisa01" class="twitter"><i class="bx bxl-twitter" style="color: #cccccc;"></i></a>
+        <a href="https://github.com/Ayoolisa/saros-dlmm-telegram-bot" class="github"><i class="bx bxl-github" style="color: #cccccc;"></i></a>
       </div>
     </div>
   </footer>
 
   <!-- Scroll Top -->
-  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center" style="background: var(--bg-secondary); color: var(--text-primary);"><i class="bi bi-arrow-up-short"></i></a>
 
   <!-- Preloader -->
-  <div id="preloader"></div>
+  <div id="preloader" style="background: var(--bg-primary);"></div>
 
   <!-- Vendor JS Files -->
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -182,6 +251,15 @@
 
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
+
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const theme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      body.setAttribute('data-theme', theme);
+      document.getElementById('theme-toggle').innerHTML = theme === 'dark' ? '<i class="bi bi-moon-stars"></i>' : '<i class="bi bi-sun"></i>';
+    }
+  </script>
 
 </body>
 
