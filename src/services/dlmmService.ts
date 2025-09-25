@@ -1,5 +1,5 @@
 // src/services/dlmmService.ts
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, TransactionSignature } from '@solana/web3.js';
 import * as dotenv from 'dotenv';
 import bs58 from 'bs58';
 
@@ -28,8 +28,9 @@ const MockDLMM = {
 const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const connection = new Connection(RPC_URL, 'confirmed');
 
+// Global bot wallet (for bot-owned operations, if needed)
 const walletPrivateKey = process.env.WALLET_PRIVATE_KEY;
-let wallet: Keypair | null = null;
+let botWallet: Keypair | null = null;
 
 if (walletPrivateKey) {
   try {
@@ -37,8 +38,8 @@ if (walletPrivateKey) {
     if (secretKey.length !== 64) {
       throw new Error('Invalid private key length; expected 64 bytes');
     }
-    wallet = Keypair.fromSecretKey(secretKey);
-    console.log('Wallet public key:', wallet.publicKey.toString());
+    botWallet = Keypair.fromSecretKey(secretKey);
+    console.log('Bot wallet public key:', botWallet.publicKey.toString());
   } catch (error) {
     console.error('Failed to parse WALLET_PRIVATE_KEY:', (error as Error).message);
   }
@@ -48,9 +49,17 @@ if (walletPrivateKey) {
 
 export class DlmmService {
   private dlmm: typeof MockDLMM | null = null;
+  private userWallet: Keypair | null = null;
 
-  async init(poolAddress: string) {
-    if (!wallet) throw new Error('Wallet not configured');
+  async init(poolAddress: string, userWallet?: PublicKey | Keypair) {
+    if (userWallet instanceof Keypair) {
+      this.userWallet = userWallet;
+    } else if (userWallet) {
+      this.userWallet = botWallet; // Fallback to bot wallet for read-only ops with PublicKey
+    } else {
+      this.userWallet = botWallet;
+    }
+    if (!this.userWallet) throw new Error('Wallet not configured');
     this.dlmm = MockDLMM;
     return this.dlmm;
   }
@@ -71,8 +80,9 @@ export class DlmmService {
     }
   }
 
-  async addLiquidity(lowerBin: number, upperBin: number, amountX: string, amountY: string) {
-    if (!this.dlmm || !wallet) throw new Error('DLMM/Wallet not ready');
+  async addLiquidity(lowerBin: number, upperBin: number, amountX: string, amountY: string, userKeypair?: Keypair): Promise<TransactionSignature> {
+    if (!this.dlmm || (!this.userWallet && !userKeypair)) throw new Error('DLMM/Wallet not ready');
+    const signer = userKeypair || this.userWallet!;
     try {
       const tx = await this.dlmm.createPositionAndAddLiquidity();
       return tx;
@@ -81,8 +91,9 @@ export class DlmmService {
     }
   }
 
-  async removeLiquidity(positionPubkey: PublicKey, amount: string) {
-    if (!this.dlmm) throw new Error('DLMM not initialized');
+  async removeLiquidity(positionPubkey: PublicKey, amount: string, userKeypair?: Keypair): Promise<TransactionSignature> {
+    if (!this.dlmm || (!this.userWallet && !userKeypair)) throw new Error('DLMM/Wallet not ready');
+    const signer = userKeypair || this.userWallet!;
     try {
       const tx = await this.dlmm.removeLiquidity();
       return tx;

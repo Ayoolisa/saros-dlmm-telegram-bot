@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: saros-dlmm-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Set this manually
+      - key: SOLANA_RPC_URL
+        value: https://rpc.ankr.com/solana_devnet/3ca1a65c0b1beed8488c4cb3f5b7075171efc972746fe36b52ffa9144759b1ea
+      - key: WALLET_PRIVATE_KEY
+        sync: false  # Set this manually
