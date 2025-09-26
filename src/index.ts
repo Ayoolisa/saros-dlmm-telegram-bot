@@ -125,7 +125,12 @@ bot.use(session());
 bot.use((ctx, next) => {
   const userId = ctx.from?.id || 'unknown';
   if (ctx.callbackQuery) {
-    console.log(`User ${userId} clicked button: ${ctx.callbackQuery.data}`);
+    // Type guard to ensure ctx.callbackQuery has data property
+    if ('data' in ctx.callbackQuery) {
+      console.log(`User ${userId} clicked button: ${ctx.callbackQuery.data}`);
+    } else {
+      console.log(`User ${userId} triggered a callback without data`);
+    }
   } else if (ctx.message && 'text' in ctx.message) {
     console.log(`User ${userId} sent message: ${ctx.message.text}`);
   }
