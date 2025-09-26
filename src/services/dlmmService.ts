@@ -5,6 +5,9 @@ import bs58 from 'bs58';
 
 dotenv.config();
 
+// src/services/dlmmService.ts
+// ... (previous imports and setup remain unchanged)
+
 const MockDLMM = {
   async getUserPositions(user: PublicKey) {
     return [
@@ -17,11 +20,19 @@ const MockDLMM = {
       },
     ];
   },
-  async createPositionAndAddLiquidity() {
-    return 'mockTxSignature';
+  async createPositionAndAddLiquidity(lowerBin: number, upperBin: number, amountX: string, amountY: string) {
+    if (isNaN(lowerBin) || isNaN(upperBin) || !amountX || !amountY) {
+      throw new Error('Invalid liquidity parameters');
+    }
+    const txSig = `mockTx_${lowerBin}_${upperBin}_${amountX}_${amountY}_${Date.now()}`;
+    console.log('MockDLMM.createPositionAndAddLiquidity called with:', { lowerBin, upperBin, amountX, amountY }, 'returning:', txSig);
+    return txSig;
   },
-  async removeLiquidity() {
-    return 'mockRemoveTx';
+  async removeLiquidity(positionPubkey: PublicKey, amount: string) {
+    if (!amount || isNaN(Number(amount))) throw new Error('Invalid amount for removal');
+    const txSig = `mockRemoveTx_${positionPubkey.toString()}_${amount}_${Date.now()}`;
+    console.log('MockDLMM.removeLiquidity called with:', { positionPubkey, amount }, 'returning:', txSig);
+    return txSig;
   },
 };
 
@@ -52,6 +63,7 @@ export class DlmmService {
   private userWallet: Keypair | null = null;
 
   async init(poolAddress: string, userWallet?: PublicKey | Keypair) {
+    console.log('DlmmService init called with poolAddress:', poolAddress, 'userWallet type:', typeof userWallet);
     if (userWallet instanceof Keypair) {
       this.userWallet = userWallet;
     } else if (userWallet) {
@@ -61,48 +73,66 @@ export class DlmmService {
     }
     if (!this.userWallet) throw new Error('Wallet not configured');
     this.dlmm = MockDLMM;
+    console.log('DlmmService init successful, userWallet publicKey:', this.userWallet.publicKey.toString());
     return this.dlmm;
   }
 
   async getPositions(userPublicKey: PublicKey) {
+    console.log('getPositions called with userPublicKey:', userPublicKey.toString());
     if (!this.dlmm) throw new Error('DLMM not initialized');
     try {
       const positions = await this.dlmm.getUserPositions(userPublicKey);
-      return positions.map((pos) => ({
+      const formattedPositions = positions.map((pos) => ({
         pool: pos.pool.toString(),
         lowerBin: pos.lowerBinId,
         upperBin: pos.upperBinId,
         liquidity: pos.liquidity.toString(),
         feesEarned: pos.feesOwed.toString(),
       }));
+      console.log('getPositions returned:', formattedPositions);
+      return formattedPositions;
     } catch (error) {
+      console.error('getPositions error:', error);
       throw new Error(`Failed to fetch positions: ${(error as Error).message}`);
     }
   }
 
   async addLiquidity(lowerBin: number, upperBin: number, amountX: string, amountY: string, userKeypair?: Keypair): Promise<TransactionSignature> {
+    console.log('addLiquidity called with lowerBin:', lowerBin, 'upperBin:', upperBin, 'amountX:', amountX, 'amountY:', amountY);
     if (!this.dlmm || (!this.userWallet && !userKeypair)) throw new Error('DLMM/Wallet not ready');
     const signer = userKeypair || this.userWallet!;
+    console.log('addLiquidity signer publicKey:', signer.publicKey.toString());
     try {
-      const tx = await this.dlmm.createPositionAndAddLiquidity();
+      if (isNaN(lowerBin) || isNaN(upperBin) || !amountX || !amountY) {
+        throw new Error('Invalid input parameters for liquidity addition');
+      }
+      const tx = await this.dlmm.createPositionAndAddLiquidity(lowerBin, upperBin, amountX, amountY);
+      console.log('addLiquidity returned tx:', tx);
       return tx;
     } catch (error) {
+      console.error('addLiquidity error:', error);
       throw new Error(`Add liquidity failed: ${(error as Error).message}`);
     }
   }
 
   async removeLiquidity(positionPubkey: PublicKey, amount: string, userKeypair?: Keypair): Promise<TransactionSignature> {
+    console.log('removeLiquidity called with positionPubkey:', positionPubkey.toString(), 'amount:', amount);
     if (!this.dlmm || (!this.userWallet && !userKeypair)) throw new Error('DLMM/Wallet not ready');
     const signer = userKeypair || this.userWallet!;
+    console.log('removeLiquidity signer publicKey:', signer.publicKey.toString());
     try {
-      const tx = await this.dlmm.removeLiquidity();
+      if (!amount || isNaN(Number(amount))) throw new Error('Invalid amount for removal');
+      const tx = await this.dlmm.removeLiquidity(positionPubkey, amount); // Pass positionPubkey
+      console.log('removeLiquidity returned tx:', tx);
       return tx;
     } catch (error) {
+      console.error('removeLiquidity error:', error);
       throw new Error(`Remove liquidity failed: ${(error as Error).message}`);
     }
   }
 
   async suggestRebalance(position: any) {
-    return 'Suggestion: Shift 20% liquidity to lower bins for better yield.';
+    console.log('suggestRebalance called with position:', position);
+    return 'Suggestion: Shift 20% liquidity to lower bins for better yield\\.';
   }
 }
