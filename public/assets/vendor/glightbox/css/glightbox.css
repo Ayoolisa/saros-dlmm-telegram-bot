@@ -193,7 +193,7 @@
 }
 
 .gslide-video .plyr__poster-enabled.plyr--loading .plyr__poster {
-  display:block;
+  display: none;
 }
 
 .gslide-video .gvideo-wrapper {
