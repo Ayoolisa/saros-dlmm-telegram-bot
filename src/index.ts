@@ -56,14 +56,14 @@ const connection = new Connection(RPC_URL, 'confirmed');
 const dlmmService = new DlmmService();
 
 /**
- * Escapes mandatory special MarkdownV2 characters that break plain text.
- * Note: Reduced the list to exclude '.' and '!' to prevent over-escaping of common sentences.
+ * Escapes all reserved MarkdownV2 characters that break plain text.
+ * FIX: Re-added '.' and '!' to the escape list as they are reserved characters in MarkdownV2.
  */
 const escapeMarkdownV2 = (text: string): string => {
   if (typeof text !== 'string') return '';
-  // Escapes: _ * [ ] ( ) ~ ` > # + - = | { } \
-  // This list ensures protocol compliance for structural characters.
-  return text.replace(/([_*[\]()~`>#+=|{}\\-])/g, '\\$1');
+  // Escapes: _ * [ ] ( ) ~ ` > # + - = | { } . ! \
+  // This is the full set of reserved characters that must be escaped in plain text for MarkdownV2.
+  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\/])/g, '\\$1'); 
 };
 
 // Shared logic for positions
