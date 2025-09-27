@@ -100,8 +100,8 @@ async function getPositions(userWallet: PublicKey) {
             `*Position ${i + 1}*\n` +
             `Pool: ${escapeMarkdownV2(p.pool)}\n` +
             `Range: ${p.lowerBin} to ${p.upperBin}\n` +
-            `Liquidity: ${p.liquidity.toFixed(4)} SOL\n` +
-            `Fees: ${p.feesEarned.toFixed(4)} SOL`
+            `Liquidity: ${escapeMarkdownV2(p.liquidity.toFixed(4))} SOL\n` + // FIX: Escaping the formatted number which contains '.'
+            `Fees: ${escapeMarkdownV2(p.feesEarned.toFixed(4))} SOL` // FIX: Escaping the formatted number which contains '.'
         )
         .join('\n\n');
   } catch (error) {
@@ -133,6 +133,7 @@ async function getWalletOverview(userWallet: PublicKey) {
   try {
     await dlmmService.init('', userWallet);
     const balance = await connection.getBalance(userWallet) / 1e9; // Fetch actual balance
+    const escapedBalance = escapeMarkdownV2(balance.toFixed(4)); // FIX: Escaping the formatted number which contains '.'
     const address = escapeMarkdownV2(userWallet.toString()); // Escape the address
     const positions = await dlmmService.getPositions(userWallet);
     
@@ -141,7 +142,8 @@ async function getWalletOverview(userWallet: PublicKey) {
           .map(
             (p) => {
               const safePool = escapeMarkdownV2(p.pool); // Fully escape the pool string first
-              return `Pool: ${safePool}, Range: ${p.lowerBin} to ${p.upperBin}, Liquidity: ${p.liquidity.toFixed(4)} SOL`;
+              const safeLiquidity = escapeMarkdownV2(p.liquidity.toFixed(4)); // FIX: Escaping the formatted number which contains '.'
+              return `Pool: ${safePool}, Range: ${p.lowerBin} to ${p.upperBin}, Liquidity: ${safeLiquidity} SOL`;
             }
           )
           .join('\n')
@@ -151,7 +153,7 @@ async function getWalletOverview(userWallet: PublicKey) {
     return escapeMarkdownV2(
       `Your Wallet Info\n` +
       `Address: ${address}\n` +
-      `Balance: ${balance.toFixed(4)} SOL\n` + 
+      `Balance: ${escapedBalance} SOL\n` + 
       `Pools:\n${poolDetails}`
     ); 
   } catch (error) {
@@ -263,12 +265,14 @@ bot.action('create_wallet', async (ctx) => {
   
   try {
     const balance = await connection.getBalance(new PublicKey(publicKey)) / 1e9;
+    const escapedBalance = escapeMarkdownV2(balance.toFixed(4));
+    
     ctx.reply(
       escapeMarkdownV2(
         `New wallet created! Your public key is: ${publicKey}\n` +
         `Keep this private key safe: ${privateKeyBase58}\n` +
         `*Please don’t share it with anyone!* (Except for testing in this sandbox.)\n` +
-        `Initial balance: ${balance.toFixed(4)} SOL. No positions or pools yet.`),
+        `Initial balance: ${escapedBalance} SOL. No positions or pools yet.`),
       {
         ...Markup.inlineKeyboard([
           [Markup.button.callback('Request Test Tokens', 'request_tokens')],
@@ -327,10 +331,12 @@ bot.on('text', async (ctx) => {
       delete ctx.session.waitingForWalletImport;
 
       const balance = await connection.getBalance(new PublicKey(publicKey)) / 1e9;
+      const escapedBalance = escapeMarkdownV2(balance.toFixed(4));
+      
       ctx.reply(
         escapeMarkdownV2(
           `Wallet imported! Your public key is: ${publicKey}\n` +
-          `Initial balance: ${balance.toFixed(4)} SOL. No positions or pools yet.`
+          `Initial balance: ${escapedBalance} SOL. No positions or pools yet.`
         ),
         {
           ...Markup.inlineKeyboard([
