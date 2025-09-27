@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import { DlmmService } from './services/dlmmService.js'; 
 import { Keypair, PublicKey, Connection } from '@solana/web3.js';
 import bs58 from 'bs58';
+import * as http from 'http'; // Import Node.js HTTP module for the landing page server
 
 dotenv.config();
 
@@ -55,15 +56,14 @@ const connection = new Connection(RPC_URL, 'confirmed');
 const dlmmService = new DlmmService();
 
 /**
- * Escapes ALL mandatory special MarkdownV2 characters.
- * This is necessary to prevent "400: Bad Request: can't parse entities" errors
- * when periods, exclamation marks, etc., are used in plain text parts of the message.
+ * Escapes mandatory special MarkdownV2 characters that break plain text.
+ * Note: Reduced the list to exclude '.' and '!' to prevent over-escaping of common sentences.
  */
 const escapeMarkdownV2 = (text: string): string => {
   if (typeof text !== 'string') return '';
-  // Escapes: _ * [ ] ( ) ~ ` > # + - = | { } . ! \
-  // This ensures compliance with Telegram's strict MarkdownV2 requirements.
-  return text.replace(/([_*[\]()~`>#+=|{}.!\\-])/g, '\\$1');
+  // Escapes: _ * [ ] ( ) ~ ` > # + - = | { } \
+  // This list ensures protocol compliance for structural characters.
+  return text.replace(/([_*[\]()~`>#+=|{}\\-])/g, '\\$1');
 };
 
 // Shared logic for positions
@@ -389,6 +389,7 @@ bot.action('request_tokens', async (ctx) => {
     console.error(`Request tokens error for user ${ctx.from!.id}:`, error);
     const err = error as any;
 
+    // Step 1: Define the plain text error part (and escape it)
     let replyMessage = 'Sorry, the airdrop service is unavailable or severely rate-limited right now.';
     
     if ((err.message || '').includes('rate limit') || (err.message || '').includes('Airdrop failed')) {
@@ -397,12 +398,21 @@ bot.action('request_tokens', async (ctx) => {
       replyMessage += ' We encountered a network issue during the request.';
     }
     
-    // Suggest the official web faucet as an alternative.
-    // The escapeMarkdownV2 function handles the backslashes inside the text, 
-    // but the content within the code blocks (``) is preserved by Telegram.
-    replyMessage += `\n\nYou can also try the official web faucet: \`https://faucet.solana.com/\` using your wallet address: \`${ctx.session.wallet?.publicKey || 'No wallet set'}\``;
+    const escapedReplyMessage = escapeMarkdownV2(replyMessage);
 
-    ctx.reply(escapeMarkdownV2(replyMessage), { parse_mode: 'MarkdownV2' });
+    // Step 2: Construct the final message using a template literal, ensuring backticks are used correctly for Markdown V2
+    const walletAddress = ctx.session.wallet?.publicKey || 'No wallet set';
+    const faucetLink = 'https://faucet.solana.com/';
+
+    const finalMessage = 
+        escapedReplyMessage + 
+        '\n\n' +
+        escapeMarkdownV2('You can also try the official web faucet: ') + 
+        `\`${faucetLink}\`` + 
+        escapeMarkdownV2(' using your wallet address: ') + 
+        `\`${walletAddress}\``;
+
+    ctx.reply(finalMessage, { parse_mode: 'MarkdownV2' });
   }
 });
 
@@ -728,8 +738,40 @@ bot.catch((err, ctx) => {
   }
 });
 
+// --- New HTTP Server for Landing Page Redirect ---
+
+/**
+ * Starts a minimal HTTP server to redirect web requests (like clicking the Render URL)
+ * to a dedicated landing page.
+ */
+const startLandingPageServer = () => {
+    // IMPORTANT: Change this to your actual landing page URL
+    const LANDING_PAGE_URL = 'https://docs.saros.finance/saros-dlmm/dlmm-mechanism'; 
+    const PORT = process.env.PORT || 3000;
+
+    const server = http.createServer((req, res) => {
+        // Only redirect requests to the root path
+        if (req.url === '/') {
+            console.log(`Web request received. Redirecting to: ${LANDING_PAGE_URL}`);
+            res.writeHead(302, { 'Location': LANDING_PAGE_URL });
+            res.end();
+        } else {
+            // Respond with a 404 for any other path
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not Found');
+        }
+    });
+
+    server.listen(PORT, () => {
+        console.log(`HTTP Redirect Server running on port ${PORT}.`);
+    });
+};
+
 // Launch with Retry
 async function launchBotWithRetry(maxRetries = 5, delayMs = 5000) {
+  // Start the HTTP redirect server first, as it needs to run concurrently
+  startLandingPageServer(); 
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await bot.launch();
@@ -829,8 +871,13 @@ setInterval(async () => {
   }
 }, 300000); // 5 minutes
 
-process.on('SIGINT', () => bot.stop('SIGINT'));
-process.on('SIGTERM', () => bot.stop('SIGTERM'));
+process.on('SIGINT', () => {
+    bot.stop('SIGINT');
+    // Note: The HTTP server will shut down when the main process exits.
+});
+process.on('SIGTERM', () => {
+    bot.stop('SIGTERM');
+});
 
 launchBotWithRetry().catch((error) => {
   console.error('Failed to launch bot after retries:', (error as Error).message);
