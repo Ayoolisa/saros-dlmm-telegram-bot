@@ -621,7 +621,7 @@ bot.command('add_liquidity', async (ctx) => {
   const args = ctx.message.text.split(' ').slice(1) || []; 
   if (args.length < 5) { 
     return ctx.reply(
-      escapeMarkdownV2('Invalid format. Use: `/add_liquidity <pool_address> <lower_bin> <upper_bin> <amount_x> <amount_y>`'),
+      escapeMarkdownV2('Invalid format\\. Use: `/add_liquidity <pool_address> <lower_bin> <upper_bin> <amount_x> <amount_y>`'),
       { parse_mode: 'MarkdownV2' }
     );
   }
@@ -638,7 +638,7 @@ bot.command('add_liquidity', async (ctx) => {
   const amountYStr = amountY.trim();
   
   if (isNaN(lowerBin) || isNaN(upperBin) || lowerBin < 0 || upperBin < 0 || isNaN(Number(amountXStr)) || isNaN(Number(amountYStr)) || Number(amountXStr) <= 0 || Number(amountYStr) <= 0) {
-    return ctx.reply(escapeMarkdownV2('Oops! Please use valid positive numbers for bins and amounts.'), { parse_mode: 'MarkdownV2' });
+    return ctx.reply(escapeMarkdownV2('Oops! Please use valid positive numbers for bins and amounts\\. All inputs must be numerical except the pool address\\.'), { parse_mode: 'MarkdownV2' });
   }
   
   try {
@@ -652,7 +652,7 @@ bot.command('add_liquidity', async (ctx) => {
     const sig = await dlmmService.addLiquidity(lowerBin, upperBin, amountXStr, amountYStr, keypair); 
     
     ctx.reply(
-      escapeMarkdownV2(`Great! Your liquidity was added.\nTransaction Signature: ${sig.slice(0, 10)}....\nCheck your wallet soon.`), 
+      escapeMarkdownV2(`Great! Your liquidity was added\\.\nTransaction Signature: ${sig.slice(0, 10)}\\.\\.\\.\\.\\nCheck your wallet soon\\.`), 
       {
         parse_mode: 'MarkdownV2',
         ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
@@ -662,10 +662,13 @@ bot.command('add_liquidity', async (ctx) => {
     console.error(`Add liquidity command error for user ${ctx.from!.id}:`, error);
     const errorMessage = (error as Error).message || 'an unknown error occurred';
     
+    // FIX: Enhanced error handling for common transaction issues
     if (errorMessage.includes('Invalid public key')) {
-       ctx.reply(escapeMarkdownV2('Error: The pool address provided is not a valid Solana Public Key. Please check the format.'), { parse_mode: 'MarkdownV2' });
+       ctx.reply(escapeMarkdownV2('Error: The pool address provided is not a valid Solana Public Key\\. Please check the format (must be 32\\-44 characters)\\.'), { parse_mode: 'MarkdownV2' });
+    } else if (errorMessage.includes('Insufficient balance') || errorMessage.includes('Simulation failed')) {
+       ctx.reply(escapeMarkdownV2('Error: Transaction failed (e\\.g\\., Insufficient SOL/tokens, or invalid bin range)\\. Did you try using /faucet first\\?'), { parse_mode: 'MarkdownV2' });
     } else {
-       ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t add your liquidity. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+       ctx.reply(escapeMarkdownV2(`Transaction error: ${errorMessage}\\. Please verify your inputs and try again\\.`), { parse_mode: 'MarkdownV2' });
     }
   }
 });
@@ -674,7 +677,7 @@ bot.command('remove_liquidity', async (ctx) => {
   const args = ctx.message.text.split(' ').slice(1) || []; 
   if (args.length < 2) {
     return ctx.reply(
-      escapeMarkdownV2('Invalid format. Use: `/remove_liquidity <position_pubkey> <amount>`'),
+      escapeMarkdownV2('Invalid format\\. Use: `/remove_liquidity <position_pubkey> <amount>`'),
       { parse_mode: 'MarkdownV2' }
     );
   }
@@ -687,7 +690,7 @@ bot.command('remove_liquidity', async (ctx) => {
   
   const amountNum = Number(amount);
   if (isNaN(amountNum) || amountNum <= 0) {
-    return ctx.reply(escapeMarkdownV2('Oops! Please use a valid positive number for the amount to remove.'), { parse_mode: 'MarkdownV2' });
+    return ctx.reply(escapeMarkdownV2('Oops! Please use a valid positive number for the amount to remove\\.'), { parse_mode: 'MarkdownV2' });
   }
   
   try {
@@ -701,7 +704,7 @@ bot.command('remove_liquidity', async (ctx) => {
     const sig = await dlmmService.removeLiquidity(positionPubkey, amount, keypair);
     
     ctx.reply(
-      escapeMarkdownV2(`Great! Your liquidity was removed.\nTransaction Signature: ${sig.slice(0, 10)}....\nCheck your wallet soon.`), 
+      escapeMarkdownV2(`Great! Your liquidity was removed\\.\nTransaction Signature: ${sig.slice(0, 10)}\\.\\.\\.\\.\\nCheck your wallet soon\\.`), 
       {
         parse_mode: 'MarkdownV2',
         ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
@@ -711,10 +714,13 @@ bot.command('remove_liquidity', async (ctx) => {
     console.error(`Remove liquidity command error for user ${ctx.from!.id}:`, error);
     const errorMessage = (error as Error).message || 'an unknown error occurred';
     
+    // FIX: Enhanced error handling for common transaction issues
     if (errorMessage.includes('Invalid public key')) {
-       ctx.reply(escapeMarkdownV2('Error: The position address provided is not a valid Solana Public Key. Please check the format.'), { parse_mode: 'MarkdownV2' });
+       ctx.reply(escapeMarkdownV2('Error: The position address provided is not a valid Solana Public Key\\. Please check the format\\.'), { parse_mode: 'MarkdownV2' });
+    } else if (errorMessage.includes('Position not found') || errorMessage.includes('Invalid amount')) {
+       ctx.reply(escapeMarkdownV2('Error: Could not find or access the position, or the removal amount is invalid\\.'), { parse_mode: 'MarkdownV2' });
     } else {
-       ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t remove your liquidity. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+       ctx.reply(escapeMarkdownV2(`Transaction error: ${errorMessage}\\. Please verify your inputs and try again\\.`), { parse_mode: 'MarkdownV2' });
     }
   }
 });
@@ -755,7 +761,7 @@ bot.catch((err, ctx) => {
   const error = err as Error;
   console.error(`Telegraf error for user ${ctx?.from?.id || 'unknown'} in chat ${ctx.chat?.id || 'unknown'}:`, error.message, error);
   if (ctx) {
-    ctx.reply(escapeMarkdownV2('Sorry, something went wrong on our end. Please try again later.'), { parse_mode: 'MarkdownV2' }).catch(() => {
+    ctx.reply(escapeMarkdownV2('Sorry, something went wrong on our end\\. Please try again later\\. If this happens often, report the error\\.'), { parse_mode: 'MarkdownV2' }).catch(() => {
       console.error('Failed to send error message to user.');
     });
   }

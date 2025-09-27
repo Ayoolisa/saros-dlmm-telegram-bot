@@ -1,16 +1,16 @@
-# Saros DLMM Telegram Bot
+🤖 Saros DLMM Proactive Telegram BotA personal sentinel for managing your Saros DLMM liquidity positions on Solana Devnet.1. Project OverviewThis bot transforms the complex, manual process of managing Solana Decentralized Liquidity Market Maker (DLMM) positions into a simple, proactive chat experience.Built for the Saros Hackathon, this project focuses on reliability and user experience by providing real-time alerts and executing core DeFi actions directly through Telegram commands.Key Value PropositionThe bot is proactive, not just reactive. It polls the Solana network to detect critical changes and sends instant Telegram notifications when:Your SOL Balance changes.Your DLMM Positions (liquidity or bin ranges) are updated.New transaction signatures are detected in your connected wallet.2. Core FeaturesCommandDescriptionSyntax/Example/startInitializes the bot session and provides the main menu./positionsDisplays a formatted, easy-to-read list of all your active DLMM positions./add_liquidityCreates a new position or adds liquidity to an existing one./add_liquidity <pool_addr> <lower_bin> <upper_bin> <amt_x> <amt_y>/remove_liquidityRemoves a specified amount of liquidity from an existing position./remove_liquidity <position_pubkey> <amount>/rebalanceProvides intelligent suggestions on how and when to adjust your bin ranges./faucetRequests a free Devnet SOL airdrop to fund transaction fees (includes RPC fallback and exponential backoff for reliability)./wallet_overviewShows your current Devnet public key, SOL balance, and associated pool details.3. Getting Started (Local Setup)PrerequisitesYou will need the following installed:Node.js (v16 or higher)npm (comes with Node.js) or YarnA Telegram Bot Token (obtainable from BotFather on Telegram).Installation StepsClone the Repository:git clone <your-repo-url>
+cd saros-dlmm-bot
+Install Dependencies:npm install
+# or yarn install
+Create the .env File (Crucial):Create a file named .env in the root directory and populate it with your environment variables.TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN_HERE>"
 
-A Telegram bot for managing liquidity positions on Saros DLMM on Solana devnet. Built for the Saros Hackathon.
+# Primary RPC for Solana Devnet (e.g., QuickNode or Alchemy endpoint)
+SOLANA_RPC_URL="[https://api.devnet.solana.com](https://api.devnet.solana.com)" 
 
-## Features
-- View positions (`/positions`): Displays formatted liquidity positions.
-- Add liquidity (`/add_liquidity <pool> <lower_bin> <upper_bin> <amount_x> <amount_y>`).
-- Remove liquidity (`/remove_liquidity <position_pubkey> <amount>`).
-- Rebalance (`/rebalance`): Suggests bin adjustments.
-- Pool stats (`/stats`): Mock analytics.
-- Interactive buttons for navigation.
+# Fallback RPC is essential for reliable airdrops and balance checks
+SOLANA_FALLBACK_RPC_URL="[https://devnet.genesysgo.net](https://devnet.genesysgo.net)" 
 
-## Setup
-1. Clone: `git clone <your-repo-url>`
-2. Install: `npm install`
-3. Create `.env`:
+# Port for the web server (used to satisfy platform requirements, does not affect bot functionality)
+PORT=3000 
+Run the Bot:Start the application using the following command. The bot will automatically begin polling for Telegram messages and running its background alert tasks.npm start
+4. Usage in TelegramFind Your Bot: Search for your bot's name in Telegram.Start: Send the /start command.Wallet Setup: The bot will prompt you to either Create a new wallet (recommended for testing) or Import a wallet. Note: Wallet data is stored temporarily in memory and is for Devnet testing only.Fund: Use the /faucet command to get test SOL for transaction fees.Interact: Use the inline buttons or the /add_liquidity command to begin managing your DLMM positions!5. Technical Note & DisclaimerThis application uses a mock DLMM service for execution and confirmation logic, allowing testing of the full command flow without requiring complex external contract imports. It is designed for Devnet testing purposes only.The bot stores user wallets in an in-memory map (session store). This data is volatile and will be lost if the bot is restarted. This method was chosen to comply with the hackathon's submission environment constraints but is NOT suitable for production use.
