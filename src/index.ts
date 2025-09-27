@@ -1,8 +1,8 @@
 import { Telegraf, Markup, Context } from 'telegraf';
 import { session } from 'telegraf';
 import * as dotenv from 'dotenv';
-// Assuming DlmmService is a custom service file in the same directory structure
-import { DlmmService } from './services/dlmmService'; 
+// FIX: Changed import to include .js extension for successful module resolution in compiled environment (e.g., Node.js ESM in dist/)
+import { DlmmService } from './services/dlmmService.js'; 
 import { Keypair, PublicKey, Connection } from '@solana/web3.js';
 import bs58 from 'bs58';
 
