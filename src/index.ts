@@ -1,57 +1,46 @@
-// src/index.ts
 import { Telegraf, Markup, Context } from 'telegraf';
 import { session } from 'telegraf';
 import * as dotenv from 'dotenv';
-import { DlmmService } from './services/dlmmService';
-import { Keypair, PublicKey, Connection, clusterApiUrl } from '@solana/web3.js';
+// Assuming DlmmService is a custom service file in the same directory structure
+import { DlmmService } from './services/dlmmService'; 
+import { Keypair, PublicKey, Connection } from '@solana/web3.js';
 import bs58 from 'bs58';
-import fs from 'fs';
 
-// Constants
-const WALLET_FILE = 'wallets.json';
-const STATE_FILE = 'states.json';
+dotenv.config();
 
-// Interfaces
+// Types
 interface WalletData {
   publicKey: string;
   privateKey: string;
 }
 
+interface PositionData {
+  pool: string;
+  lowerBin: number;
+  upperBin: number;
+  liquidity: number; // Changed to number for cleaner comparison
+  feesEarned: number; // Changed to number for cleaner comparison
+}
+
 interface UserState {
   lastBalance: number;
-  lastPositions: any[];
+  lastPositions: PositionData[]; // Use the defined type
   lastSignatures: string[];
+  network: string;
+  lastFaucetTime?: number; // Track last faucet request
 }
 
-interface SessionData {
-  wallet?: WalletData;
-  waitingForWalletImport?: boolean;
-}
-
+// Extend Telegraf's Context with session properties
 interface MyContext extends Context {
-  session: SessionData;
+  session: {
+    wallet?: WalletData;
+    waitingForWalletImport?: boolean;
+  };
 }
 
-// Load and save data
-let wallets: Record<number, WalletData> = {};
-let states: Record<number, UserState> = {};
-
-function loadData(file: string): any {
-  if (fs.existsSync(file)) {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  }
-  return {};
-}
-
-function saveData(file: string, data: any) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-wallets = loadData(WALLET_FILE);
-states = loadData(STATE_FILE);
-
-// Config
-dotenv.config();
+// Global state
+const wallets: Record<number, WalletData> = {};
+const states: Record<number, UserState> = {};
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 if (!botToken) {
@@ -59,468 +48,791 @@ if (!botToken) {
   process.exit(1);
 }
 
-const RPC_URL = process.env.SOLANA_RPC_URL || clusterApiUrl('devnet'); // Default to Devnet, but allow override
+const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+const FALLBACK_RPC_URL = process.env.SOLANA_FALLBACK_RPC_URL || 'https://devnet.genesysgo.net'; // Fallback RPC
 const connection = new Connection(RPC_URL, 'confirmed');
 
 const dlmmService = new DlmmService();
 
-// Escape Markdown
-const escapeMarkdown = (text: string) =>
-  text.replace(/([_*[\]()~`>#+=|{}.!])/g, '\\$1');
+/**
+ * Escapes ALL mandatory special MarkdownV2 characters.
+ * This is necessary to prevent "400: Bad Request: can't parse entities" errors
+ * when periods, exclamation marks, etc., are used in plain text parts of the message.
+ */
+const escapeMarkdownV2 = (text: string): string => {
+  if (typeof text !== 'string') return '';
+  // Escapes: _ * [ ] ( ) ~ ` > # + - = | { } . ! \
+  // This ensures compliance with Telegram's strict MarkdownV2 requirements.
+  return text.replace(/([_*[\]()~`>#+=|{}.!\\-])/g, '\\$1');
+};
 
-// Utility Functions
+// Shared logic for positions
 async function getPositions(userWallet: PublicKey) {
-  await dlmmService.init('mockPoolAddress', userWallet);
-  const positions = await dlmmService.getPositions(userWallet);
-  return positions.length
-    ? positions
+  try {
+    // Initialize the service for read operations
+    await dlmmService.init('', userWallet); 
+    const positions = await dlmmService.getPositions(userWallet);
+    
+    if (!positions.length) {
+      return escapeMarkdownV2('You don\'t have any positions yet. Try adding some liquidity!');
+    }
+    
+    // Construct the string, escaping the dynamic parts (addresses, numbers)
+    return positions
         .map(
           (p, i) =>
-            `*Position ${i + 1}* 📊\n` +
-            `Pool: \`${escapeMarkdown(p.pool)}\`\n` +
-            `Range: ${p.lowerBin}\\-${p.upperBin}\n` +
-            `Liquidity: ${p.liquidity} SOL\n` +
-            `Fees: ${p.feesEarned} SOL`
+            `*Position ${i + 1}*\n` +
+            `Pool: ${escapeMarkdownV2(p.pool)}\n` +
+            `Range: ${p.lowerBin} to ${p.upperBin}\n` +
+            `Liquidity: ${p.liquidity.toFixed(4)} SOL\n` +
+            `Fees: ${p.feesEarned.toFixed(4)} SOL`
         )
-        .join('\n\n')
-    : 'No positions found. Try *Add Liquidity*.';
-}
-
-async function getRebalanceSuggestion(userWallet: PublicKey) {
-  await dlmmService.init('mockPoolAddress', userWallet);
-  const positions = await dlmmService.getPositions(userWallet);
-  if (!positions.length) {
-    return 'No positions to rebalance. Add liquidity first.';
+        .join('\n\n');
+  } catch (error) {
+    console.error('getPositions error:', error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    return escapeMarkdownV2(`Sorry, we couldn’t check your positions right now. Error: ${errorMessage}. Try again later.`);
   }
-  return escapeMarkdown(await dlmmService.suggestRebalance(positions[0]));
 }
 
+// Shared logic for rebalance
+async function getRebalanceSuggestion(userWallet: PublicKey) {
+  try {
+    await dlmmService.init('', userWallet);
+    const positions = await dlmmService.getPositions(userWallet);
+    if (!positions.length) {
+      return escapeMarkdownV2('You don’t have any positions to rebalance. Add liquidity first!');
+    }
+    // Assuming suggestRebalance returns a descriptive string
+    return dlmmService.suggestRebalance(positions[0]); // Service handles escaping
+  } catch (error) {
+    console.error('getRebalanceSuggestion error:', error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    return escapeMarkdownV2(`Sorry, we couldn’t suggest a rebalance right now. Error: ${errorMessage}. Try again later.`);
+  }
+}
+
+// Function to get wallet overview
 async function getWalletOverview(userWallet: PublicKey) {
-  await dlmmService.init('mockPoolAddress', userWallet);
-  const positions = await dlmmService.getPositions(userWallet);
-  const balance = await connection.getBalance(userWallet) / 1e9;
-  const address = userWallet.toString();
-  const poolDetails = positions.length
-    ? positions
-        .map(
-          (p) =>
-            `Pool: \`${escapeMarkdown(p.pool)}\`, Range: ${p.lowerBin}\\-${p.upperBin}, Liquidity: ${p.liquidity} SOL`
-        )
-        .join('\n')
-    : 'No pools associated. Add liquidity to join a pool.';
-  return (
-    `*Wallet Overview* 💼\n` +
-    `Address: \`${address}\`\n` +
-    `Balance: ${balance} SOL\n` +
-    `Pools:\n${poolDetails}`
-  );
+  try {
+    await dlmmService.init('', userWallet);
+    const balance = await connection.getBalance(userWallet) / 1e9; // Fetch actual balance
+    const address = escapeMarkdownV2(userWallet.toString()); // Escape the address
+    const positions = await dlmmService.getPositions(userWallet);
+    
+    const poolDetails = positions.length
+      ? positions
+          .map(
+            (p) => {
+              const safePool = escapeMarkdownV2(p.pool); // Fully escape the pool string first
+              return `Pool: ${safePool}, Range: ${p.lowerBin} to ${p.upperBin}, Liquidity: ${p.liquidity.toFixed(4)} SOL`;
+            }
+          )
+          .join('\n')
+      : 'No pools yet. Add liquidity to join one!';
+      
+    // Return the escaped message content
+    return escapeMarkdownV2(
+      `Your Wallet Info\n` +
+      `Address: ${address}\n` +
+      `Balance: ${balance.toFixed(4)} SOL\n` + 
+      `Pools:\n${poolDetails}`
+    ); 
+  } catch (error) {
+    console.error('getWalletOverview error:', error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    return escapeMarkdownV2(`Sorry, we couldn’t load your wallet info. Error: ${errorMessage}. Try again later.`);
+  }
 }
 
-// Initialize Bot
-const bot = new Telegraf<MyContext>(botToken);
+/**
+ * Robust retry function for airdrop with enhanced error handling.
+ */
+async function requestAirdropWithRetry(conn: Connection, publicKey: PublicKey, lamports: number, retries = 3, delayMs = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const signature = await conn.requestAirdrop(publicKey, lamports);
+      // Wait for confirmation to ensure the airdrop is processed
+      const confirmation = await conn.confirmTransaction(signature, 'confirmed');
+      if (confirmation.value.err) {
+          throw new Error(`Transaction failed to confirm: ${JSON.stringify(confirmation.value.err)}`);
+      }
+      return signature;
+    } catch (error) {
+      const err = error as any;
+      const rpcUrl = (conn as any)._rpcEndpoint; // Get the URL used for logging
+      console.error(`Airdrop attempt ${attempt} on ${rpcUrl} failed: ${err.message}`);
+      
+      if (attempt === retries) {
+        throw err; 
+      }
+      // Implement exponential backoff for retries
+      await new Promise((resolve) => setTimeout(resolve, delayMs * Math.pow(2, attempt - 1)));
+    }
+  }
+  throw new Error('Airdrop failed after all retries.'); 
+}
 
-// Middleware
+// Initialize Telegraf bot and session middleware
+const bot = new Telegraf<MyContext>(botToken);
 bot.use(session());
 
+// Logging middleware
 bot.use((ctx, next) => {
   const userId = ctx.from?.id || 'unknown';
-  if (ctx.callbackQuery) {
-    // Type guard to ensure ctx.callbackQuery has data property
-    if ('data' in ctx.callbackQuery) {
-      console.log(`User ${userId} clicked button: ${ctx.callbackQuery.data}`);
-    } else {
-      console.log(`User ${userId} triggered a callback without data`);
-    }
-  } else if (ctx.message && 'text' in ctx.message) {
+  if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
+    console.log(`User ${userId} clicked button: ${ctx.callbackQuery.data}`);
+  } else if (ctx.message && 'text' in ctx.message) { // Explicitly check if it's a text message for logging
     console.log(`User ${userId} sent message: ${ctx.message.text}`);
   }
   return next();
 });
 
+// Wallet loading middleware
 bot.use((ctx, next) => {
-  if (!ctx.session) ctx.session = {}; // Initialize session if undefined
   const userId = ctx.from?.id;
-  if (userId && wallets[userId]) {
-    ctx.session.wallet = wallets[userId];
+  if (userId) {
+    if (!ctx.session) ctx.session = {}; 
+    
+    if (wallets[userId]) {
+      ctx.session.wallet = wallets[userId];
+    }
   }
   return next();
 });
 
-// Handlers
+// Start command
 bot.start(async (ctx) => {
-  if (!ctx.session) ctx.session = {};
-
-  const userId = ctx.from!.id;
-
   if (!ctx.session.wallet) {
     ctx.reply(
-      escapeMarkdown('*Wallet Setup Required* 🔐\nFirst time? Choose how to connect your Solana wallet:'),
+      escapeMarkdownV2('Welcome! You need to set up a wallet first. Choose an option to get started:'),
       {
-        parse_mode: 'MarkdownV2',
         ...Markup.inlineKeyboard([
-          [Markup.button.callback('Create New Wallet', 'create_wallet')],
-          [Markup.button.callback('Import Wallet', 'import_wallet')],
+          [Markup.button.callback('Create a new wallet', 'create_wallet')],
+          [Markup.button.callback('Import a wallet', 'import_wallet')],
         ]),
+        parse_mode: 'MarkdownV2',
       }
     );
     return;
   }
 
   ctx.reply(
-    escapeMarkdown(`*Welcome back!* 🚀\nYour wallet: \`${ctx.session.wallet.publicKey}\`\nChoose an action:`),
+    escapeMarkdownV2(`Welcome back! Your wallet is ready: ${ctx.session.wallet.publicKey}. Pick an action:`),
     {
-      parse_mode: 'MarkdownV2',
       ...Markup.inlineKeyboard([
-        [Markup.button.callback('View Positions', 'positions')],
-        [Markup.button.callback('Add Liquidity', 'add_liquidity')],
-        [Markup.button.callback('Remove Liquidity', 'remove_liquidity')],
-        [Markup.button.callback('Rebalance', 'rebalance')],
-        [Markup.button.callback('Wallet Overview', 'wallet_overview')],
-        [Markup.button.callback('Change Wallet', 'change_wallet')],
+        [Markup.button.callback('See my positions', 'positions')],
+        [Markup.button.callback('Add liquidity', 'add_liquidity')],
+        [Markup.button.callback('Remove liquidity', 'remove_liquidity')],
+        [Markup.button.callback('Get rebalance tips', 'rebalance')],
+        [Markup.button.callback('Check my wallet', 'wallet_overview')],
+        [Markup.button.callback('View pools', 'pools')],
+        [Markup.button.callback('Request Faucet', 'request_tokens')], 
       ]),
+      parse_mode: 'MarkdownV2',
     }
   );
 });
 
 bot.action('create_wallet', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
-
   const userId = ctx.from!.id;
   const keypair = Keypair.generate();
   const publicKey = keypair.publicKey.toString();
   const privateKeyBase58 = bs58.encode(keypair.secretKey);
 
-  const walletData: WalletData = { publicKey, privateKey: privateKeyBase58 };
-  ctx.session.wallet = walletData;
-  wallets[userId] = walletData;
-  saveData(WALLET_FILE, wallets);
-
-  ctx.reply(
-    escapeMarkdown(`*New Wallet Created* 🆕\nPublic Key: \`${publicKey}\`\n\n*Save this private key securely:* \`${privateKeyBase58}\`\n\n⚠️ Never share your private key!`),
-    {
-      parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback('Back to Menu', 'menu')],
-      ]),
-    }
-  );
-
-  if (!states[userId]) {
-    states[userId] = { lastBalance: 0, lastPositions: [], lastSignatures: [] };
-    saveData(STATE_FILE, states);
+  ctx.session.wallet = { publicKey, privateKey: privateKeyBase58 };
+  wallets[userId] = ctx.session.wallet;
+  
+  try {
+    const balance = await connection.getBalance(new PublicKey(publicKey)) / 1e9;
+    ctx.reply(
+      escapeMarkdownV2(
+        `New wallet created! Your public key is: ${publicKey}\n` +
+        `Keep this private key safe: ${privateKeyBase58}\n` +
+        `*Please don’t share it with anyone!* (Except for testing in this sandbox.)\n` +
+        `Initial balance: ${balance.toFixed(4)} SOL. No positions or pools yet.`),
+      {
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('Request Test Tokens', 'request_tokens')],
+          [Markup.button.callback('Go to menu', 'menu')],
+        ]),
+        parse_mode: 'MarkdownV2',
+      }
+    );
+  } catch (error) {
+    console.error('Initial balance check failed:', error);
+    ctx.reply(
+      escapeMarkdownV2(`New wallet created, but we couldn't check the balance due to a network error. Public key: ${publicKey}`),
+      {
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('Request Test Tokens', 'request_tokens')],
+          [Markup.button.callback('Go to menu', 'menu')],
+        ]),
+        parse_mode: 'MarkdownV2',
+      }
+    );
   }
 });
 
 bot.action('import_wallet', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
-
   ctx.session.waitingForWalletImport = true;
   ctx.reply(
-    escapeMarkdown('*Import Wallet* 🔑\nSend your base58 private key (e.g., "dev123...").\n\n⚠️ Demo only—use secure methods in production.'),
+    escapeMarkdownV2(
+      'Import your wallet by sending your private key (Base58 encoded, e.g., "dev123..."). ' +
+      'This is just for testing—use secure methods in real use!'
+    ),
     { parse_mode: 'MarkdownV2' }
   );
 });
 
+// Handle wallet import from text message
 bot.on('text', async (ctx) => {
-  if (!ctx.session) ctx.session = {};
-
   const userId = ctx.from!.id;
+  // Safely access 'text' using type assertion for Telegraf's complex type union
+  const privateKeyText = (ctx.message as any).text || '';
 
-  if (ctx.session.waitingForWalletImport && (ctx.message!.text.startsWith('dev') || ctx.message!.text.length > 80)) {
+  if (ctx.session.waitingForWalletImport && (privateKeyText.startsWith('dev') || privateKeyText.length > 80)) {
     try {
-      const privateKeyBase58 = ctx.message!.text.trim();
+      const privateKeyBase58 = privateKeyText.trim();
+      
       const secretKey = bs58.decode(privateKeyBase58);
-      if (secretKey.length !== 64) throw new Error('Invalid private key length');
+      if (secretKey.length !== 64) {
+        throw new Error('Invalid private key length (must be 64 bytes).');
+      }
+      
       const keypair = Keypair.fromSecretKey(secretKey);
       const publicKey = keypair.publicKey.toString();
 
-      const walletData: WalletData = { publicKey, privateKey: privateKeyBase58 };
-      ctx.session.wallet = walletData;
-      wallets[userId] = walletData;
-      saveData(WALLET_FILE, wallets);
+      ctx.session.wallet = { publicKey, privateKey: privateKeyBase58 };
+      wallets[userId] = ctx.session.wallet;
       delete ctx.session.waitingForWalletImport;
 
+      const balance = await connection.getBalance(new PublicKey(publicKey)) / 1e9;
       ctx.reply(
-        escapeMarkdown(`*Wallet Imported* ✅\nPublic Key: \`${publicKey}\`\n\nReady to use!`),
+        escapeMarkdownV2(
+          `Wallet imported! Your public key is: ${publicKey}\n` +
+          `Initial balance: ${balance.toFixed(4)} SOL. No positions or pools yet.`
+        ),
         {
-          parse_mode: 'MarkdownV2',
           ...Markup.inlineKeyboard([
-            [Markup.button.callback('Back to Menu', 'menu')],
+            [Markup.button.callback('Request Test Tokens', 'request_tokens')],
+            [Markup.button.callback('Go to menu', 'menu')],
           ]),
+          parse_mode: 'MarkdownV2',
         }
       );
-
-      if (!states[userId]) {
-        states[userId] = { lastBalance: 0, lastPositions: [], lastSignatures: [] };
-        saveData(STATE_FILE, states);
-      }
     } catch (error) {
-      ctx.reply(escapeMarkdown(`*Error*: ${(error as Error).message}. Try again.`), { parse_mode: 'MarkdownV2' });
+      console.error(`Wallet import error for user ${userId}:`, error);
+      const errorMessage = (error as Error).message || 'Invalid key or unknown error';
+      ctx.reply(escapeMarkdownV2(`Oops! Something went wrong: ${errorMessage}. Please try again with a valid private key:`), { parse_mode: 'MarkdownV2' });
     }
-  } else if (ctx.message!.text.startsWith('/')) {
-    ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
+  } else if (privateKeyText.startsWith('/')) {
+    // If it's a command, let it proceed to command handlers, or prompt if no wallet
+    if (!ctx.session.wallet) {
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    }
   }
 });
 
-bot.action('positions', async (ctx) => {
+// Action to request test tokens
+bot.action('request_tokens', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
+  const userId = ctx.from!.id;
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      return;
+    }
+
+    if (!states[userId]) {
+      states[userId] = { lastBalance: 0, lastPositions: [], lastSignatures: [], network: 'devnet', lastFaucetTime: 0 };
+    }
+    const state = states[userId];
+    const now = Date.now();
+    const timeSinceLastFaucet = (now - (state.lastFaucetTime || 0)) / 1000; // In seconds
+    const hourlyLimitSeconds = 60 * 60; // 1 hour
+
+    // Check hourly limit
+    if (timeSinceLastFaucet < hourlyLimitSeconds) {
+      const remainingTime = Math.ceil((hourlyLimitSeconds - timeSinceLastFaucet) / 60);
+      ctx.reply(escapeMarkdownV2(`Sorry, you can only request tokens once per hour. Wait *${remainingTime}* minutes and try again.`), { parse_mode: 'MarkdownV2' });
+      return;
+    }
+
+    ctx.reply(escapeMarkdownV2('Requesting 2 test SOL, this may take a moment...'));
+    
+    const pubkey = new PublicKey(ctx.session.wallet.publicKey);
+    let signature;
+    
+    // --- Attempt with Primary and Fallback RPCs ---
+    try {
+      signature = await requestAirdropWithRetry(connection, pubkey, 2e9); 
+    } catch (primaryError) {
+      console.warn(`Primary RPC failed: ${RPC_URL}. Trying fallback RPC...`);
+      const fallbackConnection = new Connection(FALLBACK_RPC_URL, 'confirmed');
+      signature = await requestAirdropWithRetry(fallbackConnection, pubkey, 2e9);
+    }
+    
+    // Success
+    states[userId] = { ...state, lastFaucetTime: now };
+    ctx.reply(
+      escapeMarkdownV2(`Success! You got 2 test SOL.\nTransaction Signature: ${signature.slice(0, 10)}....\nCheck your wallet in a few minutes.`), 
+      {
+        ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+        parse_mode: 'MarkdownV2',
+      }
+    );
+  } catch (error) {
+    console.error(`Request tokens error for user ${ctx.from!.id}:`, error);
+    const err = error as any;
+
+    let replyMessage = 'Sorry, the airdrop service is unavailable or severely rate-limited right now.';
+    
+    if ((err.message || '').includes('rate limit') || (err.message || '').includes('Airdrop failed')) {
+      replyMessage += ' This is common on Devnet public RPCs.';
+    } else if ((err.message || '').includes('timeout') || (err.message || '').includes('network')) {
+      replyMessage += ' We encountered a network issue during the request.';
+    }
+    
+    // Suggest the official web faucet as an alternative.
+    // The escapeMarkdownV2 function handles the backslashes inside the text, 
+    // but the content within the code blocks (``) is preserved by Telegram.
+    replyMessage += `\n\nYou can also try the official web faucet: \`https://faucet.solana.com/\` using your wallet address: \`${ctx.session.wallet?.publicKey || 'No wallet set'}\``;
+
+    ctx.reply(escapeMarkdownV2(replyMessage), { parse_mode: 'MarkdownV2' });
+  }
+});
+
+// Update action handlers
+
+bot.action('positions', async (ctx) => {
+  await ctx.answerCbQuery();
+  
+  try {
+    if (!ctx.session.wallet) {
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
       return;
     }
     const message = await getPositions(new PublicKey(ctx.session.wallet.publicKey));
-    ctx.reply(escapeMarkdown(`*Your Positions* 📋\n\n${message}`), {
+    ctx.reply(message, {
       parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
     });
   } catch (error) {
-    ctx.reply(escapeMarkdown(`*Error*: ${escapeMarkdown((error as Error).message)}`), { parse_mode: 'MarkdownV2' });
+    console.error(`Positions error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t check your positions. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
   }
 });
 
 bot.action('add_liquidity', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
-
+  
+  if (!ctx.session.wallet) {
+    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    return;
+  }
+  
   ctx.reply(
-    escapeMarkdown('*Add Liquidity* 💧\nUse the command: `/add_liquidity <pool> <lower_bin> <upper_bin> <amount_x> <amount_y>`'),
+    escapeMarkdownV2('Add liquidity by typing: `/add_liquidity <pool_address> <lower_bin> <upper_bin> <amount_x> <amount_y>`\n\nOr try a test option:'),
     {
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('Try a test amount', 'add_liquidity_mock')],
+        [Markup.button.callback('Go to menu', 'menu')],
+      ]),
       parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
     }
   );
 });
 
-bot.command('add_liquidity', async (ctx) => {
-  if (!ctx.session) ctx.session = {};
+bot.action('add_liquidity_mock', async (ctx) => {
+  await ctx.answerCbQuery();
 
-  const args = ctx.message!.text.split(' ').slice(1);
-  if (args.length < 4) {
-    return ctx.reply(
-      escapeMarkdown('*Add Liquidity* 💧\nUsage: `/add_liquidity <pool> <lower_bin> <upper_bin> <amount_x> <amount_y>`'),
-      { parse_mode: 'MarkdownV2' }
-    );
-  }
-  const [pool, lowerBinStr, upperBinStr, amountX, amountY = '0'] = args;
-  const lowerBin = Number(lowerBinStr);
-  const upperBin = Number(upperBinStr);
-  if (isNaN(lowerBin) || isNaN(upperBin) || !amountX || !amountY || lowerBin >= upperBin) {
-    return ctx.reply(escapeMarkdown('*Error*: Invalid inputs. Ensure bins are numbers, amount_x and amount_y are positive, and lower_bin < upper_bin.'), { parse_mode: 'MarkdownV2' });
-  }
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
       return;
     }
     const keypair = Keypair.fromSecretKey(bs58.decode(ctx.session.wallet.privateKey));
-    await dlmmService.init(pool, keypair);
-    const sig = await dlmmService.addLiquidity(lowerBin, upperBin, amountX, amountY, keypair);
-    ctx.reply(escapeMarkdown(`*Liquidity Added* 💧\nTransaction: \`${escapeMarkdown(sig)}\`\nPool: ${escapeMarkdown(pool)}`), {
-      parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
-    });
+    // Pass the actual keypair for signing
+    const sig = await dlmmService.addLiquidity(1, 10, '1', '1', keypair); 
+    
+    ctx.reply(
+      escapeMarkdownV2(`Great! Your mock liquidity was added.\nTransaction Signature: ${sig.slice(0, 10)}....\nCheck your wallet soon.`), 
+      {
+        ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+        parse_mode: 'MarkdownV2',
+      }
+    );
   } catch (error) {
-    ctx.reply(escapeMarkdown(`*Error*: ${escapeMarkdown((error as Error).message)}`), { parse_mode: 'MarkdownV2' });
+    console.error(`Add liquidity mock error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t add your liquidity. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
   }
 });
 
 bot.action('remove_liquidity', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
 
+  if (!ctx.session.wallet) {
+    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    return;
+  }
+  
   ctx.reply(
-    escapeMarkdown('*Remove Liquidity* 🏦\nUse the command: `/remove_liquidity <position_pubkey> <amount>`'),
+    escapeMarkdownV2('Remove liquidity by typing: `/remove_liquidity <position_pubkey> <amount>`\n\n_Note: You need the position\'s public key from the "See my positions" view to use this command._'),
     {
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('Go to menu', 'menu')],
+      ]),
       parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
     }
   );
 });
 
-bot.command('remove_liquidity', async (ctx) => {
-  if (!ctx.session) ctx.session = {};
-
-  const args = ctx.message!.text.split(' ').slice(1);
-  if (args.length < 2) {
-    return ctx.reply(
-      escapeMarkdown('*Remove Liquidity* 🏦\nUsage: `/remove_liquidity <position_pubkey> <amount>`'),
-      { parse_mode: 'MarkdownV2' }
-    );
-  }
-  const [positionPubkeyStr, amount] = args;
-  try {
-    const positionPubkey = new PublicKey(positionPubkeyStr);
-    if (isNaN(Number(amount)) || !amount) {
-      throw new Error('Invalid amount for liquidity removal');
-    }
-    if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
-      return;
-    }
-    const keypair = Keypair.fromSecretKey(bs58.decode(ctx.session.wallet.privateKey));
-    await dlmmService.init('mockPoolAddress', keypair);
-    const sig = await dlmmService.removeLiquidity(positionPubkey, amount, keypair);
-    ctx.reply(escapeMarkdown(`*Liquidity Removed* 🏦\nTransaction: \`${escapeMarkdown(sig)}\`\nPosition: ${escapeMarkdown(positionPubkeyStr)}`), {
-      parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
-    });
-  } catch (error) {
-    ctx.reply(escapeMarkdown(`*Error*: ${escapeMarkdown((error as Error).message)}`), { parse_mode: 'MarkdownV2' });
-  }
-});
-
 bot.action('rebalance', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
       return;
     }
     const suggestion = await getRebalanceSuggestion(new PublicKey(ctx.session.wallet.publicKey));
-    ctx.reply(escapeMarkdown(`*Rebalance Suggestion* ⚖️\n${suggestion}`), {
+    ctx.reply(suggestion, {
       parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
     });
   } catch (error) {
-    ctx.reply(escapeMarkdown(`*Error*: ${escapeMarkdown((error as Error).message)}`), { parse_mode: 'MarkdownV2' });
+    console.error(`Rebalance error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t suggest a rebalance right now. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
   }
 });
 
 bot.action('wallet_overview', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdown('*Error*: No wallet set. Use /start to configure.'), { parse_mode: 'MarkdownV2' });
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
       return;
     }
     const overview = await getWalletOverview(new PublicKey(ctx.session.wallet.publicKey));
-    ctx.reply(escapeMarkdown(overview), {
+    ctx.reply(overview, {
       parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back to Menu', 'menu')]]),
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
     });
   } catch (error) {
-    ctx.reply(escapeMarkdown(`*Error*: ${escapeMarkdown((error as Error).message)}`), { parse_mode: 'MarkdownV2' });
+    console.error(`Wallet overview error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t load your wallet info. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
   }
+});
+
+bot.action('pools', async (ctx) => {
+  await ctx.answerCbQuery();
+  ctx.reply(
+    escapeMarkdownV2('Here are some example pool addresses to try (you must replace these with real addresses for actual interaction):\n\n- `9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin` (SOL/USDC example)\n- `7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU` (Another example)'),
+    {
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+      parse_mode: 'MarkdownV2',
+    }
+  );
 });
 
 bot.action('menu', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!ctx.session) ctx.session = {};
 
   ctx.reply(
-    escapeMarkdown('*Saros DLMM Bot Menu* 🚀\nChoose an action:'),
+    escapeMarkdownV2('What would you like to do next?'),
     {
-      parse_mode: 'MarkdownV2',
       ...Markup.inlineKeyboard([
-        [Markup.button.callback('View Positions', 'positions')],
-        [Markup.button.callback('Add Liquidity', 'add_liquidity')],
-        [Markup.button.callback('Remove Liquidity', 'remove_liquidity')],
-        [Markup.button.callback('Rebalance', 'rebalance')],
-        [Markup.button.callback('Wallet Overview', 'wallet_overview')],
-        [Markup.button.callback('Change Wallet', 'change_wallet')],
+        [Markup.button.callback('See my positions', 'positions')],
+        [Markup.button.callback('Add liquidity', 'add_liquidity')],
+        [Markup.button.callback('Remove liquidity', 'remove_liquidity')],
+        [Markup.button.callback('Get rebalance tips', 'rebalance')],
+        [Markup.button.callback('Check my wallet', 'wallet_overview')],
+        [Markup.button.callback('View pools', 'pools')],
+        [Markup.button.callback('Request Faucet', 'request_tokens')],
       ]),
+      parse_mode: 'MarkdownV2',
     }
   );
 });
 
-bot.action('change_wallet', async (ctx) => {
-  await ctx.answerCbQuery();
-  ctx.reply(
-    escapeMarkdown('*Change Wallet* 🔄\nThis will override your current wallet. Choose option:'),
-    {
-      parse_mode: 'MarkdownV2',
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback('Create New Wallet', 'create_wallet')],
-        [Markup.button.callback('Import Wallet', 'import_wallet')],
-        [Markup.button.callback('Back to Menu', 'menu')],
-      ]),
+// --- Text commands with wallet check ---
+
+bot.command('positions', async (ctx) => {
+  try {
+    if (!ctx.session.wallet) {
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      return;
     }
-  );
+    const message = await getPositions(new PublicKey(ctx.session.wallet.publicKey));
+    ctx.reply(message, {
+      parse_mode: 'MarkdownV2',
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+    });
+  } catch (error) {
+    console.error(`Positions command error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t check your positions. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+  }
 });
 
-// Launch and Polling
-bot.launch()
-  .then(() => console.log('Bot running...'))
-  .catch((error) => console.error('Failed to launch bot:', error));
+bot.command('add_liquidity', async (ctx) => {
+  const args = ctx.message.text.split(' ').slice(1) || []; 
+  if (args.length < 5) { 
+    return ctx.reply(
+      escapeMarkdownV2('Invalid format. Use: `/add_liquidity <pool_address> <lower_bin> <upper_bin> <amount_x> <amount_y>`'),
+      { parse_mode: 'MarkdownV2' }
+    );
+  }
+  const [pool, lowerBinStr, upperBinStr, amountX, amountY] = args;
+  
+  if (!ctx.session.wallet) {
+    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    return;
+  }
+  
+  const lowerBin = Number(lowerBinStr);
+  const upperBin = Number(upperBinStr);
+  const amountXStr = amountX.trim();
+  const amountYStr = amountY.trim();
+  
+  if (isNaN(lowerBin) || isNaN(upperBin) || lowerBin < 0 || upperBin < 0 || isNaN(Number(amountXStr)) || isNaN(Number(amountYStr)) || Number(amountXStr) <= 0 || Number(amountYStr) <= 0) {
+    return ctx.reply(escapeMarkdownV2('Oops! Please use valid positive numbers for bins and amounts.'), { parse_mode: 'MarkdownV2' });
+  }
+  
+  try {
+    // Basic validation for Public Key format
+    new PublicKey(pool);
+    
+    const keypair = Keypair.fromSecretKey(bs58.decode(ctx.session.wallet.privateKey));
+    await dlmmService.init(pool, keypair.publicKey); 
+    
+    // Call the service, passing the signing Keypair
+    const sig = await dlmmService.addLiquidity(lowerBin, upperBin, amountXStr, amountYStr, keypair); 
+    
+    ctx.reply(
+      escapeMarkdownV2(`Great! Your liquidity was added.\nTransaction Signature: ${sig.slice(0, 10)}....\nCheck your wallet soon.`), 
+      {
+        parse_mode: 'MarkdownV2',
+        ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+      }
+    );
+  } catch (error) {
+    console.error(`Add liquidity command error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    
+    if (errorMessage.includes('Invalid public key')) {
+       ctx.reply(escapeMarkdownV2('Error: The pool address provided is not a valid Solana Public Key. Please check the format.'), { parse_mode: 'MarkdownV2' });
+    } else {
+       ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t add your liquidity. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+    }
+  }
+});
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+bot.command('remove_liquidity', async (ctx) => {
+  const args = ctx.message.text.split(' ').slice(1) || []; 
+  if (args.length < 2) {
+    return ctx.reply(
+      escapeMarkdownV2('Invalid format. Use: `/remove_liquidity <position_pubkey> <amount>`'),
+      { parse_mode: 'MarkdownV2' }
+    );
+  }
+  const [positionPubkeyStr, amount] = args;
+  
+  if (!ctx.session.wallet) {
+    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    return;
+  }
+  
+  const amountNum = Number(amount);
+  if (isNaN(amountNum) || amountNum <= 0) {
+    return ctx.reply(escapeMarkdownV2('Oops! Please use a valid positive number for the amount to remove.'), { parse_mode: 'MarkdownV2' });
+  }
+  
+  try {
+    // Basic validation for Public Key format
+    const positionPubkey = new PublicKey(positionPubkeyStr); 
+    
+    const keypair = Keypair.fromSecretKey(bs58.decode(ctx.session.wallet.privateKey));
+    
+    await dlmmService.init('', keypair.publicKey); // Init for signing context
+    // Call the service, passing the signing Keypair
+    const sig = await dlmmService.removeLiquidity(positionPubkey, amount, keypair);
+    
+    ctx.reply(
+      escapeMarkdownV2(`Great! Your liquidity was removed.\nTransaction Signature: ${sig.slice(0, 10)}....\nCheck your wallet soon.`), 
+      {
+        parse_mode: 'MarkdownV2',
+        ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+      }
+    );
+  } catch (error) {
+    console.error(`Remove liquidity command error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    
+    if (errorMessage.includes('Invalid public key')) {
+       ctx.reply(escapeMarkdownV2('Error: The position address provided is not a valid Solana Public Key. Please check the format.'), { parse_mode: 'MarkdownV2' });
+    } else {
+       ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t remove your liquidity. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+    }
+  }
+});
 
-console.log('Starting index.ts...');
+bot.command('rebalance', async (ctx) => {
+  try {
+    if (!ctx.session.wallet) {
+      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      return;
+    }
+    const suggestion = await getRebalanceSuggestion(new PublicKey(ctx.session.wallet.publicKey));
+    ctx.reply(suggestion, {
+      parse_mode: 'MarkdownV2',
+      ...Markup.inlineKeyboard([[Markup.button.callback('Go to menu', 'menu')]]),
+    });
+  } catch (error) {
+    console.error(`Rebalance command error for user ${ctx.from!.id}:`, error);
+    const errorMessage = (error as Error).message || 'an unknown error occurred';
+    ctx.reply(escapeMarkdownV2(`Sorry, we couldn’t suggest a rebalance. Error: ${errorMessage}. Try again later.`), { parse_mode: 'MarkdownV2' });
+  }
+});
 
-// Polling for alerts with retry logic
-setInterval(async () => {
-  for (const [userId, walletData] of Object.entries(wallets)) {
+bot.command('faucet', async (ctx) => {
+  // Directly call the action handler to avoid code duplication
+  await bot.handleUpdate({
+    update_id: ctx.update.update_id,
+    callback_query: {
+      id: `faucet_cmd_${Date.now()}`,
+      from: ctx.from!,
+      chat_instance: '',
+      data: 'request_tokens',
+    }
+  } as any); 
+});
+
+// Global error handler to prevent bot crash
+bot.catch((err, ctx) => {
+  const error = err as Error;
+  console.error(`Telegraf error for user ${ctx?.from?.id || 'unknown'} in chat ${ctx.chat?.id || 'unknown'}:`, error.message, error);
+  if (ctx) {
+    ctx.reply(escapeMarkdownV2('Sorry, something went wrong on our end. Please try again later.'), { parse_mode: 'MarkdownV2' }).catch(() => {
+      console.error('Failed to send error message to user.');
+    });
+  }
+});
+
+// Launch with Retry
+async function launchBotWithRetry(maxRetries = 5, delayMs = 5000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const publicKey = new PublicKey(walletData.publicKey);
-      const state = states[Number(userId)] || { lastBalance: 0, lastPositions: [], lastSignatures: [] };
-      let currentBalance = state.lastBalance;
-      let currentPositions = state.lastPositions;
-      let currentSignatures = state.lastSignatures;
+      await bot.launch();
+      console.log(`Bot launched successfully on attempt ${attempt}`);
+      return;
+    } catch (error) {
+      console.error(`Launch attempt ${attempt} failed: ${(error as Error).message}`);
+      if (attempt === maxRetries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('Bot launch failed after all retries.'); 
+}
 
-      // Retry logic for getBalance
+// Polling for alerts (runs every 5 minutes = 300,000ms)
+setInterval(async () => {
+  for (const [userIdStr, walletData] of Object.entries(wallets)) {
+    const userId = Number(userIdStr);
+    
+    if (!states[userId]) {
+      states[userId] = { lastBalance: 0, lastPositions: [], lastSignatures: [], network: 'devnet' };
+    }
+    
+    try {
+      const state = states[userId];
+      let currentBalance = state.lastBalance;
+      let currentPositions: PositionData[] = state.lastPositions;
+      let currentSignatures = state.lastSignatures;
+      const userPublicKey = new PublicKey(walletData.publicKey);
+
+      // --- 1. Fetch Balance with Retry ---
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          currentBalance = await connection.getBalance(publicKey) / 1e9;
+          currentBalance = await connection.getBalance(userPublicKey) / 1e9;
           break;
         } catch (err) {
           if (attempt === 2) throw err;
-          console.warn(`Retry ${attempt + 1} for getBalance failed for user ${userId}:`, err);
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+          await new Promise((r) => setTimeout(r, 2000));
         }
       }
 
-      await dlmmService.init('mockPoolAddress', publicKey);
-      currentPositions = await dlmmService.getPositions(publicKey);
+      // --- 2. Fetch Positions ---
+      await dlmmService.init('', userPublicKey);
+      currentPositions = await dlmmService.getPositions(userPublicKey) as PositionData[];
 
-      // Retry logic for getSignaturesForAddress
+      // --- 3. Fetch Signatures with Retry ---
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const signatures = await connection.getSignaturesForAddress(publicKey, { limit: 5 });
+          const signatures = await connection.getSignaturesForAddress(userPublicKey, { limit: 5 });
           currentSignatures = signatures.map((s) => s.signature);
           break;
         } catch (err) {
           if (attempt === 2) throw err;
-          console.warn(`Retry ${attempt + 1} for getSignaturesForAddress failed for user ${userId}:`, err);
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+          await new Promise((r) => setTimeout(r, 2000));
         }
       }
 
+      // --- 4. Alert Logic ---
       let alert = '';
-
-      if (currentBalance !== state.lastBalance) {
-        alert += `Balance change: ${state.lastBalance} -> ${currentBalance} SOL\n`;
+      const oldBalanceStr = state.lastBalance.toFixed(4);
+      const newBalanceStr = currentBalance.toFixed(4);
+      
+      if (newBalanceStr !== oldBalanceStr) { 
+        alert += `Balance changed: ${oldBalanceStr} to ${newBalanceStr} SOL\n`;
       }
+      
+      // Compare positions by stringifying the filtered data (e.g., ignoring fees that change constantly)
+      const positionsChanged = JSON.stringify(currentPositions.map(p => ({ p: p.pool, l: p.lowerBin, u: p.upperBin, liq: p.liquidity }))) !== 
+                             JSON.stringify(state.lastPositions.map(p => ({ p: p.pool, l: p.lowerBin, u: p.upperBin, liq: p.liquidity })));
 
-      if (JSON.stringify(currentPositions) !== JSON.stringify(state.lastPositions)) {
-        alert += 'LP positions updated!\n';
+      if (positionsChanged) {
+        alert += 'Your DLMM positions have updated (new position or range change)!\n';
       }
-
       if (currentSignatures.some((sig) => !state.lastSignatures.includes(sig))) {
-        alert += 'New activity detected - possible unauthorized access!\n';
+        alert += 'New activity detected in your wallet (new transaction signature)!\n';
       }
 
       if (alert) {
-        await bot.telegram.sendMessage(Number(userId), escapeMarkdown(`*Wallet Alert* ⚠️\n${alert}`), { parse_mode: 'MarkdownV2' });
+        // Use an actual newline, and then escape the *entire* message.
+        await bot.telegram.sendMessage(
+            userId, 
+            escapeMarkdownV2(`🚨 Hey! Something changed:\n${alert}`), 
+            { parse_mode: 'MarkdownV2' }
+        );
       }
 
-      states[Number(userId)] = {
-        lastBalance: currentBalance,
-        lastPositions: currentPositions,
-        lastSignatures: currentSignatures,
+      // Update state for next poll
+      states[userId] = { 
+        ...state, 
+        lastBalance: currentBalance, 
+        lastPositions: currentPositions, 
+        lastSignatures: currentSignatures 
       };
-      saveData(STATE_FILE, states);
     } catch (error) {
-      console.error(`Alert polling error for user ${userId}:`, error);
+      console.error(`Polling error for ${userIdStr}:`, error);
     }
   }
-}, 300000); // Poll every 5 minutes (300 seconds) to reduce load
+}, 300000); // 5 minutes
+
+process.on('SIGINT', () => bot.stop('SIGINT'));
+process.on('SIGTERM', () => bot.stop('SIGTERM'));
+
+launchBotWithRetry().catch((error) => {
+  console.error('Failed to launch bot after retries:', (error as Error).message);
+  process.exit(1);
+});

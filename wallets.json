@@ -1,6 +1,10 @@
 {
   "774964222": {
-    "publicKey": "HmB3E6yVPGRzn4CyzPVBsZLo7uM3eZtQr5E4sBhZ73TZ",
-    "privateKey": "4k7fsRYnVk3EgyUU8CMt1nWWHswBUoYwZbnjePAhdgE7ZKzvKdd7Znmj7zZUxz9trAHb5fAK4Ztd1CoxpQUuaecK"
+    "publicKey": "DT62WqM5a3AdKwvmH86Tu1R36VmGNDS72LqJrZuJ5CcF",
+    "privateKey": "iCDRCewuhUdvtsntEm5WQ8oPwXrZgk838WnsEWoQDbwrjNsW8gnBqWc7NRfBTKBydZSYoWj3QcbzWVSqQBZroTu"
+  },
+  "5255497210": {
+    "publicKey": "pi5XHkfoy3vWoBrPsRCt3aZqfq8tdLFPb2Rr8cvuZzj",
+    "privateKey": "2R1eRmdatiAdYUiJ1p3DHLGVZfQUqeNB6FbkdyjTcm5Zc8gq452APHZ3g2HtaFxxKB7ddxbWUf2NPJADkWZHS87d"
   }
 }

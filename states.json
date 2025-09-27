@@ -10,6 +10,21 @@
         "feesEarned": "10"
       }
     ],
-    "lastSignatures": []
+    "lastSignatures": [],
+    "network": "devnet"
+  },
+  "5255497210": {
+    "lastBalance": 0,
+    "lastPositions": [
+      {
+        "pool": "mockPoolAddress",
+        "lowerBin": 100,
+        "upperBin": 200,
+        "liquidity": "1000",
+        "feesEarned": "10"
+      }
+    ],
+    "lastSignatures": [],
+    "network": "devnet"
   }
 }
