@@ -9,6 +9,9 @@ import * as http from 'http'; // Import Node.js HTTP module for the landing page
 
 dotenv.config();
 
+// WARNING: Global in-memory storage. All wallet and state data will be lost if the bot is restarted.
+// For production use, this data must be persisted using a database.
+
 // Types
 interface WalletData {
   publicKey: string;
@@ -65,6 +68,19 @@ const escapeMarkdownV2 = (text: string): string => {
   // This is the full set of reserved characters that must be escaped in plain text for MarkdownV2.
   return text.replace(/([_*[\]()~`>#+\-=|{}.!\\/])/g, '\\$1'); 
 };
+
+// --- Shared Utility Functions ---
+
+/**
+ * Sends a helpful message when wallet data is missing due to session loss.
+ */
+const replyWalletMissing = (ctx: MyContext) => {
+  ctx.reply(
+    escapeMarkdownV2('Oops! Your wallet session was lost (e.g., bot restart). Please use /start to re-create or re-import your wallet.'), 
+    { parse_mode: 'MarkdownV2' }
+  );
+};
+
 
 // Shared logic for positions
 async function getPositions(userWallet: PublicKey) {
@@ -194,7 +210,8 @@ bot.use((ctx, next) => {
   if (userId) {
     if (!ctx.session) ctx.session = {}; 
     
-    if (wallets[userId]) {
+    // Attempt to restore wallet from global map if session is new or missing wallet data
+    if (wallets[userId] && !ctx.session.wallet) {
       ctx.session.wallet = wallets[userId];
     }
   }
@@ -331,7 +348,7 @@ bot.on('text', async (ctx) => {
   } else if (privateKeyText.startsWith('/')) {
     // If it's a command, let it proceed to command handlers, or prompt if no wallet
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx);
     }
   }
 });
@@ -343,7 +360,7 @@ bot.action('request_tokens', async (ctx) => {
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx);
       return;
     }
 
@@ -423,7 +440,7 @@ bot.action('positions', async (ctx) => {
   
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const message = await getPositions(new PublicKey(ctx.session.wallet.publicKey));
@@ -442,7 +459,7 @@ bot.action('add_liquidity', async (ctx) => {
   await ctx.answerCbQuery();
   
   if (!ctx.session.wallet) {
-    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    replyWalletMissing(ctx); // Use the new function for clarity
     return;
   }
   
@@ -463,7 +480,7 @@ bot.action('add_liquidity_mock', async (ctx) => {
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const keypair = Keypair.fromSecretKey(bs58.decode(ctx.session.wallet.privateKey));
@@ -488,7 +505,7 @@ bot.action('remove_liquidity', async (ctx) => {
   await ctx.answerCbQuery();
 
   if (!ctx.session.wallet) {
-    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    replyWalletMissing(ctx); // Use the new function for clarity
     return;
   }
   
@@ -508,7 +525,7 @@ bot.action('rebalance', async (ctx) => {
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const suggestion = await getRebalanceSuggestion(new PublicKey(ctx.session.wallet.publicKey));
@@ -528,7 +545,7 @@ bot.action('wallet_overview', async (ctx) => {
 
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const overview = await getWalletOverview(new PublicKey(ctx.session.wallet.publicKey));
@@ -579,7 +596,7 @@ bot.action('menu', async (ctx) => {
 bot.command('positions', async (ctx) => {
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const message = await getPositions(new PublicKey(ctx.session.wallet.publicKey));
@@ -605,7 +622,7 @@ bot.command('add_liquidity', async (ctx) => {
   const [pool, lowerBinStr, upperBinStr, amountX, amountY] = args;
   
   if (!ctx.session.wallet) {
-    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    replyWalletMissing(ctx); // Use the new function for clarity
     return;
   }
   
@@ -658,7 +675,7 @@ bot.command('remove_liquidity', async (ctx) => {
   const [positionPubkeyStr, amount] = args;
   
   if (!ctx.session.wallet) {
-    ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+    replyWalletMissing(ctx); // Use the new function for clarity
     return;
   }
   
@@ -699,7 +716,7 @@ bot.command('remove_liquidity', async (ctx) => {
 bot.command('rebalance', async (ctx) => {
   try {
     if (!ctx.session.wallet) {
-      ctx.reply(escapeMarkdownV2('Oops! You need to set up a wallet first. Use /start to begin.'), { parse_mode: 'MarkdownV2' });
+      replyWalletMissing(ctx); // Use the new function for clarity
       return;
     }
     const suggestion = await getRebalanceSuggestion(new PublicKey(ctx.session.wallet.publicKey));
